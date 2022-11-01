@@ -17,17 +17,17 @@ class AdaptiveMaxPool2d(Function):
         self.indices = indices
         self._backend = type2backend[type(input)]
         self._backend.SpatialAdaptiveMaxPooling_updateOutput(
-            self._backend.library_state, input, output, indices,
-            self.out_w, self.out_h)
+            self._backend.library_state, input, output, indices, self.out_w, self.out_h
+        )
         return output
 
     def backward(self, grad_output):
-        input, = self.saved_tensors
+        (input,) = self.saved_tensors
         indices = self.indices
         grad_input = grad_output.new()
         self._backend.SpatialAdaptiveMaxPooling_updateGradInput(
-            self._backend.library_state, input, grad_output, grad_input,
-            indices)
+            self._backend.library_state, input, grad_output, grad_input, indices
+        )
         return grad_input, None
 
 
@@ -36,8 +36,8 @@ def adaptive_max_pool(input, size):
 
 
 def roi_pooling(input, rois, size=(7, 7), spatial_scale=1.0):
-    assert (rois.dim() == 2)
-    assert (rois.size(1) == 5)
+    assert rois.dim() == 2
+    assert rois.size(1) == 5
     output = []
     rois = rois.data.float()
     num_rois = rois.size(0)
@@ -48,7 +48,7 @@ def roi_pooling(input, rois, size=(7, 7), spatial_scale=1.0):
         roi = rois[i]
         im_idx = roi[0]
         # im = input.narrow(0, im_idx, 1)
-        im = input.narrow(0, im_idx, 1)[..., roi[2]:(roi[4] + 1), roi[1]:(roi[3] + 1)]
+        im = input.narrow(0, im_idx, 1)[..., roi[2] : (roi[4] + 1), roi[1] : (roi[3] + 1)]
         output.append(adaptive_max_pool(im, size))
 
     return torch.cat(output, 0)
@@ -57,9 +57,9 @@ def roi_pooling(input, rois, size=(7, 7), spatial_scale=1.0):
 def roi_pooling_ims(input, rois, size=(7, 7), spatial_scale=1.0):
     # written for one roi one image
     # size: (w, h)
-    assert (rois.dim() == 2)
+    assert rois.dim() == 2
     assert len(input) == len(rois)
-    assert (rois.size(1) == 4)
+    assert rois.size(1) == 4
     output = []
     rois = rois.data.float()
     num_rois = rois.size(0)
@@ -69,14 +69,17 @@ def roi_pooling_ims(input, rois, size=(7, 7), spatial_scale=1.0):
     for i in range(num_rois):
         roi = rois[i]
         # im = input.narrow(0, im_idx, 1)
-        im = input.narrow(0, i, 1)[..., roi[1]:(roi[3] + 1), roi[0]:(roi[2] + 1)]
+        im = input.narrow(0, i, 1)[..., roi[1] : (roi[3] + 1), roi[0] : (roi[2] + 1)]
         output.append(adaptive_max_pool(im, size))
 
     return torch.cat(output, 0)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     input = ag.Variable(torch.rand(2, 1, 10, 10), requires_grad=True)
-    rois = ag.Variable(torch.LongTensor([[1, 2, 7, 8], [3, 3, 8, 8]]), requires_grad=False)
+    rois = ag.Variable(
+        torch.LongTensor([[1, 2, 7, 8], [3, 3, 8, 8]]), requires_grad=False
+    )
 
     out = roi_pooling_ims(input, rois, size=(8, 8))
     out.backward(out.data.clone().uniform_())

@@ -16,27 +16,19 @@ from torch.optim import lr_scheduler
 
 
 ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--images", required=True,
-                help="path to the input file")
-ap.add_argument("-n", "--epochs", default=10000,
-                help="epochs for train")
-ap.add_argument("-b", "--batchsize", default=5,
-                help="batch size for train")
-ap.add_argument("-se", "--start_epoch", required=True,
-                help="start epoch for train")
-ap.add_argument("-t", "--test", required=True,
-                help="dirs for test")
-ap.add_argument("-r", "--resume", default='111',
-                help="file for re-train")
-ap.add_argument("-f", "--folder", required=True,
-                help="folder to store model")
-ap.add_argument("-w", "--writeFile", default='fh02.out',
-                help="file for output")
+ap.add_argument("-i", "--images", required=True, help="path to the input file")
+ap.add_argument("-n", "--epochs", default=10000, help="epochs for train")
+ap.add_argument("-b", "--batchsize", default=5, help="batch size for train")
+ap.add_argument("-se", "--start_epoch", required=True, help="start epoch for train")
+ap.add_argument("-t", "--test", required=True, help="dirs for test")
+ap.add_argument("-r", "--resume", default="111", help="file for re-train")
+ap.add_argument("-f", "--folder", required=True, help="folder to store model")
+ap.add_argument("-w", "--writeFile", default="fh02.out", help="file for output")
 args = vars(ap.parse_args())
 
-wR2Path = './wR2/wR2.pth2'
+wR2Path = "./wR2/wR2.pth2"
 use_gpu = torch.cuda.is_available()
-print (use_gpu)
+print(use_gpu)
 
 numClasses = 7
 numPoints = 4
@@ -45,26 +37,28 @@ imgSize = (480, 480)
 # lpSize = (128, 64)
 provNum, alphaNum, adNum = 38, 25, 35
 batchSize = int(args["batchsize"]) if use_gpu else 2
-trainDirs = args["images"].split(',')
-testDirs = args["test"].split(',')
-modelFolder = str(args["folder"]) if str(args["folder"])[-1] == '/' else str(args["folder"]) + '/'
-storeName = modelFolder + 'fh02.pth'
+trainDirs = args["images"].split(",")
+testDirs = args["test"].split(",")
+modelFolder = (
+    str(args["folder"]) if str(args["folder"])[-1] == "/" else str(args["folder"]) + "/"
+)
+storeName = modelFolder + "fh02.pth"
 if not os.path.isdir(modelFolder):
     os.mkdir(modelFolder)
 
 epochs = int(args["epochs"])
 #   initialize the output file
-if not os.path.isfile(args['writeFile']):
-    with open(args['writeFile'], 'wb') as outF:
+if not os.path.isfile(args["writeFile"]):
+    with open(args["writeFile"], "wb") as outF:
         pass
 
 
 def get_n_params(model):
-    pp=0
+    pp = 0
     for p in list(model.parameters()):
-        nn=1
+        nn = 1
         for s in list(p.size()):
-            nn = nn*s
+            nn = nn * s
         pp += nn
     return pp
 
@@ -77,70 +71,70 @@ class wR2(nn.Module):
             nn.BatchNorm2d(num_features=48),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden2 = nn.Sequential(
             nn.Conv2d(in_channels=48, out_channels=64, kernel_size=5, padding=2),
             nn.BatchNorm2d(num_features=64),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden3 = nn.Sequential(
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=5, padding=2),
             nn.BatchNorm2d(num_features=128),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden4 = nn.Sequential(
             nn.Conv2d(in_channels=128, out_channels=160, kernel_size=5, padding=2),
             nn.BatchNorm2d(num_features=160),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden5 = nn.Sequential(
             nn.Conv2d(in_channels=160, out_channels=192, kernel_size=5, padding=2),
             nn.BatchNorm2d(num_features=192),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden6 = nn.Sequential(
             nn.Conv2d(in_channels=192, out_channels=192, kernel_size=5, padding=2),
             nn.BatchNorm2d(num_features=192),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden7 = nn.Sequential(
             nn.Conv2d(in_channels=192, out_channels=192, kernel_size=5, padding=2),
             nn.BatchNorm2d(num_features=192),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden8 = nn.Sequential(
             nn.Conv2d(in_channels=192, out_channels=192, kernel_size=5, padding=2),
             nn.BatchNorm2d(num_features=192),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden9 = nn.Sequential(
             nn.Conv2d(in_channels=192, out_channels=192, kernel_size=3, padding=1),
             nn.BatchNorm2d(num_features=192),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden10 = nn.Sequential(
             nn.Conv2d(in_channels=192, out_channels=192, kernel_size=3, padding=1),
             nn.BatchNorm2d(num_features=192),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         self.features = nn.Sequential(
             hidden1,
@@ -152,7 +146,7 @@ class wR2(nn.Module):
             hidden7,
             hidden8,
             hidden9,
-            hidden10
+            hidden10,
         )
         self.classifier = nn.Sequential(
             nn.Linear(23232, 100),
@@ -225,7 +219,9 @@ class fh02(nn.Module):
 
     def load_wR2(self, path):
         self.wR2 = wR2(numPoints)
-        self.wR2 = torch.nn.DataParallel(self.wR2, device_ids=range(torch.cuda.device_count()))
+        self.wR2 = torch.nn.DataParallel(
+            self.wR2, device_ids=range(torch.cuda.device_count())
+        )
         if not path is None:
             self.wR2.load_state_dict(torch.load(path))
             # self.wR2 = self.wR2.cuda()
@@ -248,15 +244,35 @@ class fh02(nn.Module):
         boxLoc = self.wR2.module.classifier(x9)
 
         h1, w1 = _x1.data.size()[2], _x1.data.size()[3]
-        p1 = Variable(torch.FloatTensor([[w1,0,0,0],[0,h1,0,0],[0,0,w1,0],[0,0,0,h1]]).cuda(), requires_grad=False)
+        p1 = Variable(
+            torch.FloatTensor(
+                [[w1, 0, 0, 0], [0, h1, 0, 0], [0, 0, w1, 0], [0, 0, 0, h1]]
+            ).cuda(),
+            requires_grad=False,
+        )
         h2, w2 = _x3.data.size()[2], _x3.data.size()[3]
-        p2 = Variable(torch.FloatTensor([[w2,0,0,0],[0,h2,0,0],[0,0,w2,0],[0,0,0,h2]]).cuda(), requires_grad=False)
+        p2 = Variable(
+            torch.FloatTensor(
+                [[w2, 0, 0, 0], [0, h2, 0, 0], [0, 0, w2, 0], [0, 0, 0, h2]]
+            ).cuda(),
+            requires_grad=False,
+        )
         h3, w3 = _x5.data.size()[2], _x5.data.size()[3]
-        p3 = Variable(torch.FloatTensor([[w3,0,0,0],[0,h3,0,0],[0,0,w3,0],[0,0,0,h3]]).cuda(), requires_grad=False)
+        p3 = Variable(
+            torch.FloatTensor(
+                [[w3, 0, 0, 0], [0, h3, 0, 0], [0, 0, w3, 0], [0, 0, 0, h3]]
+            ).cuda(),
+            requires_grad=False,
+        )
 
         # x, y, w, h --> x1, y1, x2, y2
         assert boxLoc.data.size()[1] == 4
-        postfix = Variable(torch.FloatTensor([[1,0,1,0],[0,1,0,1],[-0.5,0,0.5,0],[0,-0.5,0,0.5]]).cuda(), requires_grad=False)
+        postfix = Variable(
+            torch.FloatTensor(
+                [[1, 0, 1, 0], [0, 1, 0, 1], [-0.5, 0, 0.5, 0], [0, -0.5, 0, 0.5]]
+            ).cuda(),
+            requires_grad=False,
+        )
         boxNew = boxLoc.mm(postfix).clamp(min=0, max=1)
 
         # input = Variable(torch.rand(2, 1, 10, 10), requires_grad=True)
@@ -280,20 +296,24 @@ class fh02(nn.Module):
 
 epoch_start = int(args["start_epoch"])
 resume_file = str(args["resume"])
-if not resume_file == '111':
+if not resume_file == "111":
     # epoch_start = int(resume_file[resume_file.find('pth') + 3:]) + 1
     if not os.path.isfile(resume_file):
-        print ("fail to load existed model! Existing ...")
+        print("fail to load existed model! Existing ...")
         exit(0)
-    print ("Load existed model! %s" % resume_file)
+    print("Load existed model! %s" % resume_file)
     model_conv = fh02(numPoints, numClasses)
-    model_conv = torch.nn.DataParallel(model_conv, device_ids=range(torch.cuda.device_count()))
+    model_conv = torch.nn.DataParallel(
+        model_conv, device_ids=range(torch.cuda.device_count())
+    )
     model_conv.load_state_dict(torch.load(resume_file))
     model_conv = model_conv.cuda()
 else:
     model_conv = fh02(numPoints, numClasses, wR2Path)
     if use_gpu:
-        model_conv = torch.nn.DataParallel(model_conv, device_ids=range(torch.cuda.device_count()))
+        model_conv = torch.nn.DataParallel(
+            model_conv, device_ids=range(torch.cuda.device_count())
+        )
         model_conv = model_conv.cuda()
 
 print(model_conv)
@@ -321,7 +341,7 @@ def eval(model, test_dirs):
     start = time()
     for i, (XI, labels, ims) in enumerate(testloader):
         count += 1
-        YI = [[int(ee) for ee in el.split('_')[:7]] for el in labels]
+        YI = [[int(ee) for ee in el.split("_")[:7]] for el in labels]
         if use_gpu:
             x = Variable(XI.cuda(0))
         else:
@@ -356,7 +376,7 @@ def train_model(model, criterion, optimizer, num_epochs=25):
             if not len(XI) == batchSize:
                 continue
 
-            YI = [[int(ee) for ee in el.split('_')[:7]] for el in labels]
+            YI = [[int(ee) for ee in el.split("_")[:7]] for el in labels]
             Y = np.array([el.numpy() for el in Y]).T
             if use_gpu:
                 x = Variable(XI.cuda(0))
@@ -390,15 +410,29 @@ def train_model(model, criterion, optimizer, num_epochs=25):
                 pass
 
             if i % 50 == 1:
-                with open(args['writeFile'], 'a') as outF:
-                    outF.write('train %s images, use %s seconds, loss %s\n' % (i*batchSize, time() - start, sum(lossAver) / len(lossAver) if len(lossAver)>0 else 'NoLoss'))
+                with open(args["writeFile"], "a") as outF:
+                    outF.write(
+                        "train %s images, use %s seconds, loss %s\n"
+                        % (
+                            i * batchSize,
+                            time() - start,
+                            sum(lossAver) / len(lossAver)
+                            if len(lossAver) > 0
+                            else "NoLoss",
+                        )
+                    )
                 torch.save(model.state_dict(), storeName)
-        print ('%s %s %s\n' % (epoch, sum(lossAver) / len(lossAver), time()-start))
+        print("%s %s %s\n" % (epoch, sum(lossAver) / len(lossAver), time() - start))
         model.eval()
         count, correct, error, precision, avgTime = eval(model, testDirs)
-        with open(args['writeFile'], 'a') as outF:
-            outF.write('%s %s %s\n' % (epoch, sum(lossAver) / len(lossAver), time() - start))
-            outF.write('*** total %s error %s precision %s avgTime %s\n' % (count, error, precision, avgTime))
+        with open(args["writeFile"], "a") as outF:
+            outF.write(
+                "%s %s %s\n" % (epoch, sum(lossAver) / len(lossAver), time() - start)
+            )
+            outF.write(
+                "*** total %s error %s precision %s avgTime %s\n"
+                % (count, error, precision, avgTime)
+            )
         torch.save(model.state_dict(), storeName + str(epoch))
     return model
 

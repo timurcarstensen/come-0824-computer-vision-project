@@ -1,4 +1,4 @@
-#encoding:utf-8
+# encoding:utf-8
 import cv2
 import torch
 from torch.autograd import Variable
@@ -9,21 +9,14 @@ from os import path, mkdir
 from load_data import *
 from time import time
 from roi_pooling import roi_pooling_ims
-from shutil import copyfile
 
 ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--input", required=True,
-                help="path to the input folder")
-ap.add_argument("-m", "--model", required=True,
-                help="path to the model file")
-ap.add_argument("-s", "--store", required=True,
-                help="path to the store folder")
+ap.add_argument("-i", "--input", required=True, help="path to the input folder")
+ap.add_argument("-m", "--model", required=True, help="path to the model file")
 args = vars(ap.parse_args())
 
-# N is batch size; D_in is input dimension;
-# H is hidden dimension; D_out is output dimension.
 use_gpu = torch.cuda.is_available()
-print (use_gpu)
+print(use_gpu)
 
 numClasses = 4
 numPoints = 4
@@ -32,12 +25,107 @@ batchSize = 8 if use_gpu else 8
 resume_file = str(args["model"])
 
 provNum, alphaNum, adNum = 38, 25, 35
-provinces = ["皖", "沪", "津", "渝", "冀", "晋", "蒙", "辽", "吉", "黑", "苏", "浙", "京", "闽", "赣", "鲁", "豫", "鄂", "湘", "粤", "桂",
-             "琼", "川", "贵", "云", "藏", "陕", "甘", "青", "宁", "新", "警", "学", "O"]
-alphabets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
-             'X', 'Y', 'Z', 'O']
-ads = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
-       'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'O']
+provinces = [
+    "皖",
+    "沪",
+    "津",
+    "渝",
+    "冀",
+    "晋",
+    "蒙",
+    "辽",
+    "吉",
+    "黑",
+    "苏",
+    "浙",
+    "京",
+    "闽",
+    "赣",
+    "鲁",
+    "豫",
+    "鄂",
+    "湘",
+    "粤",
+    "桂",
+    "琼",
+    "川",
+    "贵",
+    "云",
+    "藏",
+    "陕",
+    "甘",
+    "青",
+    "宁",
+    "新",
+    "警",
+    "学",
+    "O",
+]
+alphabets = [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+    "O",
+]
+ads = [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "O",
+]
+
 
 class wR2(nn.Module):
     def __init__(self, num_classes=1000):
@@ -47,70 +135,70 @@ class wR2(nn.Module):
             nn.BatchNorm2d(num_features=48),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden2 = nn.Sequential(
             nn.Conv2d(in_channels=48, out_channels=64, kernel_size=5, padding=2),
             nn.BatchNorm2d(num_features=64),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden3 = nn.Sequential(
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=5, padding=2),
             nn.BatchNorm2d(num_features=128),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden4 = nn.Sequential(
             nn.Conv2d(in_channels=128, out_channels=160, kernel_size=5, padding=2),
             nn.BatchNorm2d(num_features=160),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden5 = nn.Sequential(
             nn.Conv2d(in_channels=160, out_channels=192, kernel_size=5, padding=2),
             nn.BatchNorm2d(num_features=192),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden6 = nn.Sequential(
             nn.Conv2d(in_channels=192, out_channels=192, kernel_size=5, padding=2),
             nn.BatchNorm2d(num_features=192),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden7 = nn.Sequential(
             nn.Conv2d(in_channels=192, out_channels=192, kernel_size=5, padding=2),
             nn.BatchNorm2d(num_features=192),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden8 = nn.Sequential(
             nn.Conv2d(in_channels=192, out_channels=192, kernel_size=5, padding=2),
             nn.BatchNorm2d(num_features=192),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden9 = nn.Sequential(
             nn.Conv2d(in_channels=192, out_channels=192, kernel_size=3, padding=1),
             nn.BatchNorm2d(num_features=192),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         hidden10 = nn.Sequential(
             nn.Conv2d(in_channels=192, out_channels=192, kernel_size=3, padding=1),
             nn.BatchNorm2d(num_features=192),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1, padding=1),
-            nn.Dropout(0.2)
+            nn.Dropout(0.2),
         )
         self.features = nn.Sequential(
             hidden1,
@@ -122,7 +210,7 @@ class wR2(nn.Module):
             hidden7,
             hidden8,
             hidden9,
-            hidden10
+            hidden10,
         )
         self.classifier = nn.Sequential(
             nn.Linear(23232, 100),
@@ -195,7 +283,9 @@ class fh02(nn.Module):
 
     def load_wR2(self, path):
         self.wR2 = wR2(numPoints)
-        self.wR2 = torch.nn.DataParallel(self.wR2, device_ids=range(torch.cuda.device_count()))
+        self.wR2 = torch.nn.DataParallel(
+            self.wR2, device_ids=range(torch.cuda.device_count())
+        )
         if not path is None:
             self.wR2.load_state_dict(torch.load(path))
             # self.wR2 = self.wR2.cuda()
@@ -218,15 +308,35 @@ class fh02(nn.Module):
         boxLoc = self.wR2.module.classifier(x9)
 
         h1, w1 = _x1.data.size()[2], _x1.data.size()[3]
-        p1 = Variable(torch.FloatTensor([[w1,0,0,0],[0,h1,0,0],[0,0,w1,0],[0,0,0,h1]]).cuda(), requires_grad=False)
+        p1 = Variable(
+            torch.FloatTensor(
+                [[w1, 0, 0, 0], [0, h1, 0, 0], [0, 0, w1, 0], [0, 0, 0, h1]]
+            ).cuda(),
+            requires_grad=False,
+        )
         h2, w2 = _x3.data.size()[2], _x3.data.size()[3]
-        p2 = Variable(torch.FloatTensor([[w2,0,0,0],[0,h2,0,0],[0,0,w2,0],[0,0,0,h2]]).cuda(), requires_grad=False)
+        p2 = Variable(
+            torch.FloatTensor(
+                [[w2, 0, 0, 0], [0, h2, 0, 0], [0, 0, w2, 0], [0, 0, 0, h2]]
+            ).cuda(),
+            requires_grad=False,
+        )
         h3, w3 = _x5.data.size()[2], _x5.data.size()[3]
-        p3 = Variable(torch.FloatTensor([[w3,0,0,0],[0,h3,0,0],[0,0,w3,0],[0,0,0,h3]]).cuda(), requires_grad=False)
+        p3 = Variable(
+            torch.FloatTensor(
+                [[w3, 0, 0, 0], [0, h3, 0, 0], [0, 0, w3, 0], [0, 0, 0, h3]]
+            ).cuda(),
+            requires_grad=False,
+        )
 
         # x, y, w, h --> x1, y1, x2, y2
         assert boxLoc.data.size()[1] == 4
-        postfix = Variable(torch.FloatTensor([[1,0,1,0],[0,1,0,1],[-0.5,0,0.5,0],[0,-0.5,0,0.5]]).cuda(), requires_grad=False)
+        postfix = Variable(
+            torch.FloatTensor(
+                [[1, 0, 1, 0], [0, 1, 0, 1], [-0.5, 0, 0.5, 0], [0, -0.5, 0, 0.5]]
+            ).cuda(),
+            requires_grad=False,
+        )
         boxNew = boxLoc.mm(postfix).clamp(min=0, max=1)
 
         # input = Variable(torch.rand(2, 1, 10, 10), requires_grad=True)
@@ -249,50 +359,28 @@ class fh02(nn.Module):
 
 
 def isEqual(labelGT, labelP):
-    # print (labelGT)
-    # print (labelP)
+    print(labelGT)
+    print(labelP)
     compare = [1 if int(labelGT[i]) == int(labelP[i]) else 0 for i in range(7)]
     # print(sum(compare))
     return sum(compare)
 
 
 model_conv = fh02(numPoints, numClasses)
-model_conv = torch.nn.DataParallel(model_conv, device_ids=range(torch.cuda.device_count()))
+model_conv = torch.nn.DataParallel(
+    model_conv, device_ids=range(torch.cuda.device_count())
+)
 model_conv.load_state_dict(torch.load(resume_file))
 model_conv = model_conv.cuda()
 model_conv.eval()
 
-# efficiency evaluation
-# dst = imgDataLoader([args["input"]], imgSize)
-# trainloader = DataLoader(dst, batch_size=batchSize, shuffle=True, num_workers=4)
-#
-# start = time()
-# for i, (XI) in enumerate(trainloader):
-#     x = Variable(XI.cuda(0))
-#     y_pred = model_conv(x)
-#     outputY = y_pred.data.cpu().numpy()
-#     #   assert len(outputY) == batchSize
-# print("detect efficiency %s seconds" %(time() - start))
 
-
-count = 0
-correct = 0
-error = 0
-sixCorrect = 0
-sFolder = str(args["store"])
-sFolder = sFolder if sFolder[-1] == '/' else sFolder + '/'
-if not path.isdir(sFolder):
-    mkdir(sFolder)
-
-dst = labelTestDataLoader(args["input"].split(','), imgSize)
+dst = demoTestDataLoader(args["input"].split(","), imgSize)
 trainloader = DataLoader(dst, batch_size=1, shuffle=True, num_workers=1)
-with open('fh0Eval', 'wb') as outF:
-    pass
 
 start = time()
-for i, (XI, labels, ims) in enumerate(trainloader):
-    count += 1
-    YI = [[int(ee) for ee in el.split('_')[:7]] for el in labels]
+for i, (XI, ims) in enumerate(trainloader):
+
     if use_gpu:
         x = Variable(XI.cuda(0))
     else:
@@ -304,15 +392,28 @@ for i, (XI, labels, ims) in enumerate(trainloader):
     outputY = [el.data.cpu().numpy().tolist() for el in y_pred]
     labelPred = [t[0].index(max(t[0])) for t in outputY]
 
-    #   compare YI, outputY
-    # try:
-    if isEqual(labelPred, YI[0]) == 7:
-        correct += 1
-        sixCorrect += 1
-    else:
-        sixCorrect += 1 if isEqual(labelPred, YI[0]) == 6 else 0
+    [cx, cy, w, h] = fps_pred.data.cpu().numpy()[0].tolist()
 
-    if count % 50 == 0:
-        print ('total %s correct %s error %s precision %s six %s avg_time %s' % (count, correct, error, float(correct)/count, float(sixCorrect)/count, (time() - start)/count))
-with open('fh0Eval', 'a') as outF:
-    outF.write('total %s correct %s error %s precision %s avg_time %s' % (count, correct, error, float(correct) / count, (time() - start)/count))
+    img = cv2.imread(ims[0])
+    left_up = [(cx - w / 2) * img.shape[1], (cy - h / 2) * img.shape[0]]
+    right_down = [(cx + w / 2) * img.shape[1], (cy + h / 2) * img.shape[0]]
+    cv2.rectangle(
+        img,
+        (int(left_up[0]), int(left_up[1])),
+        (int(right_down[0]), int(right_down[1])),
+        (0, 0, 255),
+        2,
+    )
+    #   The first character is Chinese character, can not be printed normally, thus is omitted.
+    lpn = (
+        alphabets[labelPred[1]]
+        + ads[labelPred[2]]
+        + ads[labelPred[3]]
+        + ads[labelPred[4]]
+        + ads[labelPred[5]]
+        + ads[labelPred[6]]
+    )
+    cv2.putText(
+        img, lpn, (int(left_up[0]), int(left_up[1]) - 20), cv2.FONT_ITALIC, 2, (0, 0, 255)
+    )
+    cv2.imwrite(ims[0], img)
