@@ -3,70 +3,70 @@ channels:
   - pytorch
   - defaults
 dependencies:
-  - blas=1.0=openblas
-  - brotlipy=0.7.0=py310h1a28f6b_1002
-  - bzip2=1.0.8=h620ffc9_4
-  - ca-certificates=2022.10.11=hca03da5_0
-  - certifi=2022.9.24=py310hca03da5_0
-  - cffi=1.15.1=py310h22df2f2_0
-  - cryptography=38.0.1=py310h834c97f_0
-  - ffmpeg=4.2.2=h04105a8_0
-  - freetype=2.12.1=h1192e45_0
-  - gettext=0.21.0=h826f4ad_0
-  - giflib=5.2.1=h1a28f6b_0
-  - gmp=6.2.1=hc377ac9_3
-  - gnutls=3.6.15=h887c41c_0
-  - icu=68.1=hc377ac9_0
-  - idna=3.4=py310hca03da5_0
-  - jpeg=9e=h1a28f6b_0
-  - lame=3.100=h1a28f6b_0
-  - lcms2=2.12=hba8e193_0
-  - lerc=3.0=hc377ac9_0
-  - libcxx=14.0.6=h848a8c0_0
-  - libdeflate=1.8=h1a28f6b_5
-  - libffi=3.4.2=hc377ac9_4
-  - libgfortran=5.0.0=11_3_0_hca03da5_28
-  - libgfortran5=11.3.0=h009349e_28
-  - libiconv=1.16=h1a28f6b_2
-  - libidn2=2.3.1=h1a28f6b_0
-  - libopenblas=0.3.21=h269037a_0
-  - libopus=1.3=h1a28f6b_1
-  - libpng=1.6.37=hb8d0fd4_0
-  - libtasn1=4.16.0=h1a28f6b_0
-  - libtiff=4.4.0=had003b8_0
-  - libunistring=0.9.10=h1a28f6b_0
-  - libvpx=1.10.0=hc377ac9_0
-  - libwebp=1.2.4=h68602c7_0
-  - libwebp-base=1.2.4=h1a28f6b_0
-  - libxml2=2.9.14=h8c5e841_0
-  - llvm-openmp=14.0.6=hc6e5704_0
-  - lz4-c=1.9.3=hc377ac9_0
-  - ncurses=6.3=h1a28f6b_3
-  - nettle=3.7.3=h84b5d62_1
-  - numpy-base=1.23.3=py310h742c864_0
-  - openh264=1.8.0=h98b2900_0
-  - openssl=1.1.1q=h1a28f6b_0
-  - pip=22.2.2=py310hca03da5_0
-  - pycparser=2.21=pyhd3eb1b0_0
-  - pyopenssl=22.0.0=pyhd3eb1b0_0
-  - pysocks=1.7.1=py310hca03da5_0
-  - python=3.10.6=hbdb9e5c_1
-  - pytorch=1.13.0=py3.10_0
-  - readline=8.2=h1a28f6b_0
-  - requests=2.28.1=py310hca03da5_0
-  - setuptools=65.5.0=py310hca03da5_0
-  - sqlite=3.39.3=h1058600_0
-  - tk=8.6.12=hb8d0fd4_0
-  - torchaudio=0.13.0=py310_cpu
-  - torchvision=0.14.0=py310_cpu
-  - typing_extensions=4.3.0=py310hca03da5_0
-  - tzdata=2022e=h04d1e81_0
-  - urllib3=1.26.12=py310hca03da5_0
-  - wheel=0.37.1=pyhd3eb1b0_0
-  - x264=1!152.20180806=h1a28f6b_0
-  - xz=5.2.6=h1a28f6b_0
-  - zlib=1.2.13=h5a0b063_0
-  - zstd=1.5.2=h8574219_0
+  - blas=1.0
+  - brotlipy=0.7.0
+  - bzip2=1.0.8
+  - ca-certificates=2022.10.11
+  - certifi=2022.9.24
+  - cffi=1.15.1
+  - cryptography=38.0.1
+  - ffmpeg=4.2.2
+  - freetype=2.12.1
+  - gettext=0.21.0
+  - giflib=5.2.1
+  - gmp=6.2.1
+  - gnutls=3.6.15
+  - icu=68.1
+  - idna=3.4
+  - jpeg=9e
+  - lame=3.100
+  - lcms2=2.12
+  - lerc=3.0
+  - libcxx=14.0.6
+  - libdeflate=1.8
+  - libffi=3.4.2
+  - libgfortran=5.0.0
+  - libgfortran5=11.3.0
+  - libiconv=1.16
+  - libidn2=2.3.1
+  - libopenblas=0.3.21
+  - libopus=1.3
+  - libpng=1.6.37
+  - libtasn1=4.16.0
+  - libtiff=4.4.0
+  - libunistring=0.9.10
+  - libvpx=1.10.0
+  - libwebp=1.2.4
+  - libwebp-base=1.2.4
+  - libxml2=2.9.14
+  - llvm-openmp=14.0.6
+  - lz4-c=1.9.3
+  - ncurses=6.3
+  - nettle=3.7.3
+  - numpy-base=1.23.3
+  - openh264=1.8.0
+  - openssl=1.1.1q
+  - pip=22.2.2
+  - pycparser=2.21
+  - pyopenssl=22.0.0
+  - pysocks=1.7.1
+  - python=3.10.6
+  - pytorch=1.13.0
+  - readline=8.2
+  - requests=2.28.1
+  - setuptools=65.5.0
+  - sqlite=3.39.3
+  - tk=8.6.12
+  - torchaudio=0.13.0
+  - torchvision=0.14.0
+  - typing_extensions=4.3.0
+  - tzdata=2022e
+  - urllib3=1.26.12
+  - wheel=0.37.1
+  - x264=1!152.20180806
+  - xz=5.2.6
+  - zlib=1.2.13
+  - zstd=1.5.2
   - pip:
     - aiohttp==3.8.3
     - aiohttp-cors==0.7.0
@@ -77,6 +77,7 @@ dependencies:
     - async-timeout==4.0.2
     - attrs==22.1.0
     - backoff==1.10.0
+    - beautifulsoup4==4.11.1
     - blessed==1.19.1
     - cachetools==5.2.0
     - cfgv==3.3.1
@@ -93,6 +94,7 @@ dependencies:
     - fonttools==4.38.0
     - frozenlist==1.3.1
     - fsspec==2022.10.0
+    - gdown==4.5.3
     - google-api-core==2.10.2
     - google-auth==2.14.0
     - googleapis-common-protos==1.56.4
@@ -155,11 +157,13 @@ dependencies:
     - six==1.16.0
     - smart-open==6.2.0
     - sniffio==1.3.0
+    - soupsieve==2.3.2.post1
     - starlette==0.20.4
     - tabulate==0.9.0
     - tensorboardx==2.5.1
     - tifffile==2022.10.10
     - toml==0.10.2
+    - tqdm==4.64.1
     - typing-extensions==4.4.0
     - uvicorn==0.16.0
     - virtualenv==20.16.6

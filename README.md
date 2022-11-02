@@ -5,7 +5,7 @@
 1. Download and install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/products/distribution)
 2. Navigate to the project directory and run the following command to create a new conda environment
 ```
-conda env create -f environment.yml
+conda env create -f environment.yaml
 ```
 
 3. Activate the environment
@@ -17,3 +17,6 @@ conda activate cv-project
 ```
 pre-commit install
 ```
+
+### Server Setup
+
