@@ -387,7 +387,12 @@ for i, (XI, ims) in enumerate(trainloader):
         x = Variable(XI)
     # Forward pass: Compute predicted y by passing x to the model
 
-    fps_pred, y_pred = model_conv(x)
+    fps_pred, y_pred = model_conv(x) 
+
+    # model_conv = fh02 predicts the location of the number on the licence plate 
+    # fh02 invoces wr2 predicts the location of the licence plate 
+    # fps_pred = box location, most likely 2 coordinates
+    # y_pred = predicted coordinates (in relation to fps_red) of each number 
 
     outputY = [el.data.cpu().numpy().tolist() for el in y_pred]
     labelPred = [t[0].index(max(t[0])) for t in outputY]

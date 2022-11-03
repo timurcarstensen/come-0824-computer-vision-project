@@ -149,7 +149,7 @@ class wR2(nn.Module):
             hidden10,
         )
         self.classifier = nn.Sequential(
-            nn.Linear(23232, 100),
+            nn.Linear(23232, 100), #11*11*192 = 23232
             # nn.ReLU(inplace=True),
             nn.Linear(100, 100),
             # nn.ReLU(inplace=True),
@@ -434,6 +434,7 @@ def train_model(model, criterion, optimizer, num_epochs=25):
                 % (count, error, precision, avgTime)
             )
         torch.save(model.state_dict(), storeName + str(epoch))
+        # save trained model to file
     return model
 
 
