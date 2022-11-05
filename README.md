@@ -21,5 +21,5 @@ pre-commit install
 ### Server Setup
 
 
-
+## Vision Transformers
 Vision Transformers implementations can be found [here](https://github.com/lucidrains/vit-pytorch).
