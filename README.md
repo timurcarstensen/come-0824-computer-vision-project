@@ -19,9 +19,9 @@ pre-commit install
 ```
 
 ### Server Setup
-
-1. Follow the [following tutorial](https://yangkky.github.io/2019/11/13/pycharm.html) to add a new remote interpreter to your IDE (the tutorial is using PyCharm)
-2. Use the following settings: 
+1. Connect to the University of Mannheim VPN using Cisco AnyConnect
+2. Follow the [following tutorial](https://yangkky.github.io/2019/11/13/pycharm.html) to add a new remote interpreter to your IDE (the tutorial is using PyCharm)
+3. Use the following settings: 
    1. *Host*: dws-student-01.informatik.uni-mannheim.de
    2. *Port*: 22
    3. *Username*: ines-tp2022
