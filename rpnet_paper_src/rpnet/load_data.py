@@ -1,10 +1,12 @@
-from torch.utils.data import *
+#from torch.utils.data import *
+import torch.utils.data 
 from imutils import paths
 import cv2
 import numpy as np
 
 
 class labelFpsDataLoader(Dataset):
+    """used for training data in rp net"""
     def __init__(self, img_dir, imgSize, is_transform=None):
         self.img_dir = img_dir
         self.img_paths = []
@@ -47,6 +49,7 @@ class labelFpsDataLoader(Dataset):
 
 
 class labelTestDataLoader(Dataset):
+    """used for testing data in rp net"""
     def __init__(self, img_dir, imgSize, is_transform=None):
         self.img_dir = img_dir
         self.img_paths = []
@@ -73,6 +76,7 @@ class labelTestDataLoader(Dataset):
 
 
 class ChaLocDataLoader(Dataset):
+    """used for training data in wr2net"""
     def __init__(self, img_dir, imgSize, is_transform=None):
         self.img_dir = img_dir
         self.img_paths = []

@@ -147,6 +147,7 @@ class wR2(nn.Module):
         x = self.classifier(x11)
         return x
 
+"""
 
 epoch_start = 0
 resume_file = str(args["resume"])
@@ -178,11 +179,13 @@ optimizer_conv = optim.SGD(model_conv.parameters(), lr=0.001, momentum=0.9)
 lrScheduler = lr_scheduler.StepLR(optimizer_conv, step_size=5, gamma=0.1)
 
 # optimizer_conv = optim.Adam(model_conv.parameters(), lr=0.01)
-
+"""
 # dst = LocDataLoader([args["images"]], imgSize)
-dst = ChaLocDataLoader(args["images"].split(","), imgSize)
+#dst = ChaLocDataLoader(args["images"].split(","), imgSize)
+img_0, label_0 = ChaLocDataLoader(args["images"].split(","), imgSize)
 trainloader = DataLoader(dst, batch_size=batchSize, shuffle=True, num_workers=4)
 
+"""
 
 def train_model(model, criterion, optimizer, num_epochs=25):
     # since = time.time()
@@ -237,3 +240,4 @@ def train_model(model, criterion, optimizer, num_epochs=25):
 
 
 model_conv = train_model(model_conv, criterion, optimizer_conv, num_epochs=epochs)
+"""
