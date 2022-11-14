@@ -104,7 +104,6 @@ class DataLoaderTrain(Dataset):
                 lines = f.read().splitlines()
             for line in lines:
                 self.img_paths.append(f"{os.getenv('DATA_DIR')}{dataset_dir}/{line}")
-        print(f"Image paths: {self.img_paths}")
         self.img_size = img_size
         self.is_transform = is_transform
 
@@ -140,8 +139,6 @@ class DataLoaderTrain(Dataset):
 
 
 class DataLoaderTest(Dataset):
-    """used for testing data in rp net"""
-
     def __init__(
         self,
         split_file: Union[str, List[str]],
@@ -169,7 +166,6 @@ class DataLoaderTest(Dataset):
                 lines = f.read().splitlines()
             for line in lines:
                 self.img_paths.append(f"{os.getenv('DATA_DIR')}{dataset_dir}/{line}")
-        print(f"Image paths: {self.img_paths}")
         self.img_size = img_size
         self.is_transform = is_transform
 
