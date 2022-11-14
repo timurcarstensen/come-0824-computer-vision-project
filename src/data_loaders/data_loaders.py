@@ -1,6 +1,7 @@
 # standard library imports
 import pathlib
 import os
+from typing import List, Tuple, Union
 
 # third party imports
 from torch.utils.data import Dataset
@@ -13,10 +14,25 @@ import numpy as np
 
 
 class DataLoaderPreTrain(Dataset):
-    def __init__(self, split_file, img_size, is_transform=None):
+    def __init__(
+        self,
+        split_file: Union[str, List[str]],
+        img_size: Tuple,
+        is_transform: bool = None,
+        test_mode: bool = False,
+    ):
+        """
+        Initialises the Pretraining Dataloader
+        :param split_file: The file containing the list of images to be used for training
+        :param img_size: desired size of the images (width, height)
+        :param is_transform: @Lukas: was soll hier hin?
+        :param test_mode: if true, use the test_images dir; else, use the full dataset
+        """
+
+        dataset_dir = "test_images" if test_mode else "CCPD2019"
 
         self.img_dir = [
-            os.getenv("DATA_DIR") + "CCPD2019/splits/" + elem for elem in split_file
+            os.getenv("DATA_DIR") + f"{dataset_dir}/splits/" + elem for elem in split_file
         ]
         print(f"Image dir: {self.img_dir}")
         # print(f"type Image dir: {type(self.img_dir)}")
@@ -28,7 +44,7 @@ class DataLoaderPreTrain(Dataset):
             with open(self.img_dir[i]) as f:
                 lines = f.read().splitlines()
             for line in lines:
-                self.img_paths.append(f"{os.getenv('DATA_DIR')}CCPD2019/{line}")
+                self.img_paths.append(f"{os.getenv('DATA_DIR')}{dataset_dir}/{line}")
         print(f"Image paths: {self.img_paths}")
         self.img_size = img_size
         # print(f"size: {self.img_size}")
@@ -40,8 +56,6 @@ class DataLoaderPreTrain(Dataset):
     def __getitem__(self, index):
         img_name = self.img_paths[index]
         img = cv.imread(img_name)
-        # print(img)
-        # print(f"Image name: {img_name}, {type(img_name)}")
         resized_image = cv.resize(img, self.img_size)
         resized_image = np.reshape(
             resized_image,
@@ -52,8 +66,6 @@ class DataLoaderPreTrain(Dataset):
         [left_up, right_down] = [
             [int(eel) for eel in el.split("&")] for el in iname[2].split("_")
         ]
-
-        # print(f"iname: {iname}")
 
         ori_w, ori_h = float(img.shape[1]), float(img.shape[0])
         assert img.shape[0] == 1160
