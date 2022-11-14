@@ -16,7 +16,9 @@ from src.data_loaders.data_loaders import DataLoaderPreTrain
 
 img_size = (480, 480)
 split_directories = ["train.txt"]
-data = DataLoaderPreTrain(split_file=split_directories, img_size=img_size)
+data = DataLoaderPreTrain(
+    split_file=split_directories, img_size=img_size, test_mode=False
+)
 print(data)
 train_loader = DataLoader(data, batch_size=1, shuffle=True)
 print(train_loader)
