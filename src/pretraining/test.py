@@ -8,22 +8,23 @@ from torch.optim import lr_scheduler
 from torch.autograd import Variable
 from time import time
 
-
-# img = cv.imread('/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/ccdp_base/01-86_91-298&341_449&414-458&394_308&410_304&357_454&341-0_0_14_28_24_26_29-124-24.jpg')
-#print(img)
-#img = cv.imread('/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/splits/erster_test.txt')
+# define image size
 imgSize = (480, 480)
+# define txt file with image locations
 img_dir = ['erster_test.txt']
-data = DataLoaderPreTrain(img_dir, imgSize)
-print(data)
-trainloader = DataLoader(data, batch_size=1, shuffle=True)
-print(trainloader)
 
-# for batch, (x, y) in enumerate(trainloader):
-#     # x,y = data
-#     print(batch)
-#     print(x)
-#     print(y)
+data = DataLoaderPreTrain(img_dir, imgSize)
+# data = DataLoaderTrain(img_dir, imgSize)
+# data = DataLoaderTest(img_dir, imgSize)
+
+trainloader = DataLoader(data, batch_size=1, shuffle=True)
+
+# for batch, (x, lbl, name) in enumerate(trainloader):
+#     print(f"Batch: {batch}")
+#     print(f"x: {x}")
+#     # print(f"y: {y}")
+#     print(f"lbl: {lbl}")
+#     print(f"name: {name}")
 
 class wR2(nn.Module):
     def __init__(self, num_classes=1000):
@@ -136,19 +137,13 @@ lrScheduler = lr_scheduler.StepLR(optimizer_conv, step_size=5, gamma=0.1)
 epoch_start = 0
 
 
-
 def train_model(model, criterion, optimizer, num_epochs=25):
-    # since = time.time()
     inner_criterion = nn.L1Loss()
     for epoch in range(epoch_start, num_epochs):
         lossAver = []
         model.train(True)
-        
-        # start = time()
-
         for i, train_data in enumerate(trainloader):
             XI, YI = train_data
-            # print('%s/%s %s' % (i, times, time()-start))
             YI = np.array([el.numpy() for el in YI]).T
             if use_gpu:
                 x = Variable(XI.cuda(0))
@@ -175,16 +170,16 @@ def train_model(model, criterion, optimizer, num_epochs=25):
             # loss getting split up, 80% weight on the x, y coordinates, 20% on the width and height of the bounding box
             if len(y_pred[0]) == batchSize:
                 if use_gpu:
-                    loss += 0.8 * nn.L1Loss().cuda()(y_pred[:][:2], y[:][:2])
-                    loss += 0.2 * nn.L1Loss().cuda()(y_pred[:][2:], y[:][2:])
+                    loss1 = 0.8 * nn.L1Loss().cuda()(y_pred[:][:2], y[:][:2])
+                    loss2 = 0.2 * nn.L1Loss().cuda()(y_pred[:][2:], y[:][2:])
                 else:
                     loss1 = 0.8 * inner_criterion(y_pred[:][:2], y[:][:2])
-                    print(f"loss1: {loss1}")
-                    loss = loss1
+                    # print(f"loss1: {loss1}")
+                    # loss = loss1
                     loss2 = 0.2 * inner_criterion(y_pred[:][2:], y[:][2:])
                     # print(f"loss2: {loss2}")
-                    loss = loss1 + loss2
-                    running_loss += loss1.item() + loss2.item()
+                loss = loss1 + loss2
+                running_loss += loss1.item() + loss2.item()
                 # print(f"loss: {loss}, type: {type(loss)}, value: {loss.item()}, val: {loss.data[0]}")
                 lossAver.append(running_loss)
                 print(f"loss: {running_loss}")
@@ -220,11 +215,6 @@ def train_model(model, criterion, optimizer, num_epochs=25):
 epochs = 2
 model_conv = train_model(model_conv, criterion, optimizer_conv, num_epochs=epochs)
 
-# number_train_images = 2
 
-# for i in range(number_train_images):
-#     resizedImage, new_labels = data.get_item(i)
-#     print(f"resized img: {resizedImage}")
-#     print(f"label: {new_labels}")
 
 
