@@ -1,53 +1,29 @@
-# Code in cnn_fn_pytorch.py
-from __future__ import print_function, division
 import cv2 as cv
+from new_data_loader import *
+from torch.utils.data import DataLoader
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.autograd import Variable
-from torch.utils.data import DataLoader
-import numpy as np
-import os
-import argparse
-from time import time
-from load_data import *
 from torch.optim import lr_scheduler
+from torch.autograd import Variable
+from time import time
 
 
-ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--images", required=True, help="path to the input file")
-ap.add_argument("-n", "--epochs", default=25, help="epochs for train")
-ap.add_argument("-b", "--batchsize", default=4, help="batch size for train")
-ap.add_argument("-r", "--resume", default="111", help="file for re-train")
-ap.add_argument("-w", "--writeFile", default="wR2.out", help="file for output")
-args = vars(ap.parse_args())
-
-use_gpu = torch.cuda.is_available()
-print(use_gpu)
-
-numClasses = 4
+img = cv.imread('/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/ccdp_base/01-86_91-298&341_449&414-458&394_308&410_304&357_454&341-0_0_14_28_24_26_29-124-24.jpg')
+#print(img)
+#img = cv.imread('/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/splits/erster_test.txt')
 imgSize = (480, 480)
-batchSize = int(args["batchsize"]) if use_gpu else 8
-modelFolder = "wR2/"
-storeName = modelFolder + "wR2.pth"
-if not os.path.isdir(modelFolder):
-    os.mkdir(modelFolder)
+img_dir = ['/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/splits/erster_test.txt']
+data = DataLoaderPreTrain(img_dir, imgSize)
+print(data)
+trainloader = DataLoader(data, batch_size=1, shuffle=True)
+print(trainloader)
 
-epochs = int(args["epochs"])
-#   initialize the output file
-with open(args["writeFile"], "wb") as outF:
-    pass
-
-
-def get_n_params(model):
-    pp = 0
-    for p in list(model.parameters()):
-        nn = 1
-        for s in list(p.size()):
-            nn = nn * s
-        pp += nn
-    return pp
-
+# for batch, (x, y) in enumerate(trainloader):
+#     # x,y = data
+#     print(batch)
+#     print(x)
+#     print(y)
 
 class wR2(nn.Module):
     def __init__(self, num_classes=1000):
@@ -148,60 +124,30 @@ class wR2(nn.Module):
         x = self.classifier(x11)
         return x
 
-"""
+numClasses = 4
+model_conv = wR2(numClasses)
 
-epoch_start = 0
-resume_file = str(args["resume"])
-if not resume_file == "111":
-    # epoch_start = int(resume_file[resume_file.find('pth') + 3:]) + 1
-    if not os.path.isfile(resume_file):
-        print("fail to load existed model! Existing ...")
-        exit(0)
-    print("Load existed model! %s" % resume_file)
-    model_conv = wR2(numClasses)
-    model_conv = torch.nn.DataParallel(
-        model_conv, device_ids=range(torch.cuda.device_count())
-    )
-    model_conv.load_state_dict(torch.load(resume_file))
-    model_conv = model_conv.cuda()
-else:
-    model_conv = wR2(numClasses)
-    if use_gpu:
-        model_conv = torch.nn.DataParallel(
-            model_conv, device_ids=range(torch.cuda.device_count())
-        )
-        model_conv = model_conv.cuda()
-
-print(model_conv)
-print(get_n_params(model_conv))
-
+use_gpu = torch.cuda.is_available()
+batchSize = 1
 criterion = nn.MSELoss()
 optimizer_conv = optim.SGD(model_conv.parameters(), lr=0.001, momentum=0.9)
 lrScheduler = lr_scheduler.StepLR(optimizer_conv, step_size=5, gamma=0.1)
-
 # optimizer_conv = optim.Adam(model_conv.parameters(), lr=0.01)
-"""
-# dst = LocDataLoader([args["images"]], imgSize)
-#dst = ChaLocDataLoader(args["images"].split(","), imgSize)
-dst = ChaLocDataLoader(args["images"].split(","), imgSize)
-dst[0]
-# dst = ChaLocDataLoader('/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/splits/erster_test.txt', imgSize)
-print(f"Images: {dst}, {type(dst)}")
-# print(cv.imread(dst))
+epoch_start = 0
 
-# trainloader = DataLoader(dst, batch_size=batchSize, shuffle=True, num_workers=4)
 
-"""
 
 def train_model(model, criterion, optimizer, num_epochs=25):
     # since = time.time()
+    inner_criterion = nn.L1Loss()
     for epoch in range(epoch_start, num_epochs):
         lossAver = []
         model.train(True)
-        lrScheduler.step()
-        start = time()
+        
+        # start = time()
 
-        for i, (XI, YI) in enumerate(trainloader):
+        for i, train_data in enumerate(trainloader):
+            XI, YI = train_data
             # print('%s/%s %s' % (i, times, time()-start))
             YI = np.array([el.numpy() for el in YI]).T
             if use_gpu:
@@ -209,41 +155,70 @@ def train_model(model, criterion, optimizer, num_epochs=25):
                 y = Variable(torch.FloatTensor(YI).cuda(0), requires_grad=False)
             else:
                 x = Variable(XI)
+                print(f"x: {x}")
                 y = Variable(torch.FloatTensor(YI), requires_grad=False)
+                print(f"y: {y}")
             # Forward pass: Compute predicted y by passing x to the model
             y_pred = model(x)
+            print(f"Predictions: {y_pred}")
+            print(f"slice: {y_pred[:][:2]}")
+            print(f"slice2: {y_pred[:][2:]}")
 
             # Compute and print loss
-            loss = 0.0
+            running_loss = 0.0
+            print(f"length y_pred: {len(y_pred)}, batch_size: {batchSize}")
             if len(y_pred) == batchSize:
-                loss += 0.8 * nn.L1Loss().cuda()(y_pred[:][:2], y[:][:2])
-                loss += 0.2 * nn.L1Loss().cuda()(y_pred[:][2:], y[:][2:])
-                lossAver.append(loss.data[0])
+                if use_gpu:
+                    loss += 0.8 * nn.L1Loss().cuda()(y_pred[:][:2], y[:][:2])
+                    loss += 0.2 * nn.L1Loss().cuda()(y_pred[:][2:], y[:][2:])
+                else:
+                    loss1 = 0.8 * inner_criterion(y_pred[:][:2], y[:][:2])
+                    print(f"loss1: {loss1}")
+                    loss = loss1
+                    # loss2 = 0.2 * inner_criterion(y_pred[:][2:], y[:][2:])
+                    # print(f"loss2: {loss2}")
+                    # loss = loss1 + loss2
+                    running_loss += loss1.item() #+ loss2.item()
+                # print(f"loss: {loss}, type: {type(loss)}, value: {loss.item()}, val: {loss.data[0]}")
+                lossAver.append(running_loss)
+                print(f"loss: {running_loss}")
 
                 # Zero gradients, perform a backward pass, and update the weights.
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                torch.save(model.state_dict(), storeName)
-            if i % 50 == 1:
-                with open(args["writeFile"], "a") as outF:
-                    outF.write(
-                        "train %s images, use %s seconds, loss %s\n"
-                        % (
-                            i * batchSize,
-                            time() - start,
-                            sum(lossAver[-50:]) / len(lossAver[-50:]),
-                        )
-                    )
-        print("%s %s %s\n" % (epoch, sum(lossAver) / len(lossAver), time() - start))
-        with open(args["writeFile"], "a") as outF:
-            outF.write(
-                "Epoch: %s %s %s\n"
-                % (epoch, sum(lossAver) / len(lossAver), time() - start)
-            )
-        torch.save(model.state_dict(), storeName + str(epoch))
+                lrScheduler.step() # should be called after optimizer.step()
+                #torch.save(model.state_dict(), storeName)
+            # if i % 50 == 1:
+            #     with open(args["writeFile"], "a") as outF:
+            #         outF.write(
+            #             "train %s images, use %s seconds, loss %s\n"
+            #             % (
+            #                 i * batchSize,
+            #                 time() - start,
+            #                 sum(lossAver[-50:]) / len(lossAver[-50:]),
+            #             )
+            #         )
+        print("%s %s\n" % (epoch, sum(lossAver) / len(lossAver)))
+        # with open(args["writeFile"], "a") as outF:
+        #     outF.write(
+        #         "Epoch: %s %s %s\n"
+        #         % (epoch, sum(lossAver) / len(lossAver), time() - start)
+        #     )
+        # torch.save(model.state_dict(), storeName + str(epoch))
+
+    print("Finished training")
+
     return model
 
-
+epochs = 2
 model_conv = train_model(model_conv, criterion, optimizer_conv, num_epochs=epochs)
-"""
+
+# number_train_images = 2
+
+# for i in range(number_train_images):
+#     resizedImage, new_labels = data.get_item(i)
+#     print(f"resized img: {resizedImage}")
+#     print(f"label: {new_labels}")
+
+

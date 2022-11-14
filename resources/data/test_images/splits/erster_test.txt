@@ -1,0 +1,2 @@
+/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/ccdp_base/01-86_91-298&341_449&414-458&394_308&410_304&357_454&341-0_0_14_28_24_26_29-124-24.jpg
+/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/ccdp_base/01-89_90-302&482_487&539-497&538_295&550_294&490_496&478-0_0_30_25_29_31_24-130-26.jpg

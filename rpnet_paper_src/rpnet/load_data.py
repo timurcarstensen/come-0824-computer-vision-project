@@ -1,7 +1,9 @@
 #from torch.utils.data import *
-import torch.utils.data 
+# import torch.utils.data 
+from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
 from imutils import paths
-import cv2
+import cv2 as cv
 import numpy as np
 
 
@@ -79,12 +81,21 @@ class ChaLocDataLoader(Dataset):
     """used for training data in wr2net"""
     def __init__(self, img_dir, imgSize, is_transform=None):
         self.img_dir = img_dir
+        print(f"Image dir: {self.img_dir}")
+        print(f"type Image dir: {type(self.img_dir)}")
         self.img_paths = []
+        print(f"Length img dir: {len(img_dir)}")
         for i in range(len(img_dir)):
-            self.img_paths += [el for el in paths.list_images(img_dir[i])]
+            # self.img_paths += [el for el in paths.list_images(self.img_dir[i])]
+            file = open(img_dir[i])
+            file_list = file.readlines()
+            for line in file_list:
+                self.img_paths.append(line)
+        print(f"Image paths: {self.img_paths}")
         # self.img_paths = os.listdir(img_dir)
         # print self.img_paths
         self.img_size = imgSize
+        print(f"size: {self.img_size}")
         self.is_transform = is_transform
 
     def __len__(self):
@@ -92,8 +103,10 @@ class ChaLocDataLoader(Dataset):
 
     def __getitem__(self, index):
         img_name = self.img_paths[index]
-        img = cv2.imread(img_name)
-        resizedImage = cv2.resize(img, self.img_size)
+        img = cv.imread(img_name)
+        print(img)
+        print(f"Image name: {img_name}, {type(img_name)}")
+        resizedImage = cv.resize(img, self.img_size)
         resizedImage = np.reshape(
             resizedImage,
             (resizedImage.shape[2], resizedImage.shape[0], resizedImage.shape[1]),
