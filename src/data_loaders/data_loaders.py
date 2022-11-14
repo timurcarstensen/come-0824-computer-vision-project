@@ -1,18 +1,23 @@
+# standard library imports
+import pathlib
+import os
+
+# third party imports
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from imutils import paths
 import cv2 as cv
 import numpy as np
-import pathlib
-import os
 
-data_dir =f"{pathlib.Path(__file__).parent.parent.parent.resolve()}/resources/data/" 
+# local imports (i.e. our own code)
 
-image_directory = data_dir + "test_images/splits/"
 
 class DataLoaderPreTrain(Dataset):
-    def __init__(self, img_dir, imgSize, is_transform=None):
-        self.img_dir = [image_directory + elem for elem in img_dir]
+    def __init__(self, split_file, img_size, is_transform=None):
+
+        self.img_dir = [
+            os.getenv("DATA_DIR") + "CCPD2019/splits/" + elem for elem in split_file
+        ]
         print(f"Image dir: {self.img_dir}")
         # print(f"type Image dir: {type(self.img_dir)}")
         self.img_paths = []
@@ -23,9 +28,9 @@ class DataLoaderPreTrain(Dataset):
             with open(self.img_dir[i]) as f:
                 lines = f.read().splitlines()
             for line in lines:
-                self.img_paths.append(f"{data_dir}test_images/{line}")
+                self.img_paths.append(f"{os.getenv('DATA_DIR')}CCPD2019/{line}")
         print(f"Image paths: {self.img_paths}")
-        self.img_size = imgSize
+        self.img_size = img_size
         # print(f"size: {self.img_size}")
         self.is_transform = is_transform
 
@@ -37,14 +42,14 @@ class DataLoaderPreTrain(Dataset):
         img = cv.imread(img_name)
         # print(img)
         # print(f"Image name: {img_name}, {type(img_name)}")
-        resizedImage = cv.resize(img, self.img_size)
-        resizedImage = np.reshape(
-            resizedImage,
-            (resizedImage.shape[2], resizedImage.shape[0], resizedImage.shape[1]),
+        resized_image = cv.resize(img, self.img_size)
+        resized_image = np.reshape(
+            resized_image,
+            (resized_image.shape[2], resized_image.shape[0], resized_image.shape[1]),
         )
 
         iname = img_name.rsplit("/", 1)[-1].rsplit(".", 1)[0].split("-")
-        [leftUp, rightDown] = [
+        [left_up, right_down] = [
             [int(eel) for eel in el.split("&")] for el in iname[2].split("_")
         ]
 
@@ -53,13 +58,13 @@ class DataLoaderPreTrain(Dataset):
         ori_w, ori_h = float(img.shape[1]), float(img.shape[0])
         assert img.shape[0] == 1160
         new_labels = [
-            (leftUp[0] + rightDown[0]) / (2 * ori_w),
-            (leftUp[1] + rightDown[1]) / (2 * ori_h),
-            (rightDown[0] - leftUp[0]) / ori_w,
-            (rightDown[1] - leftUp[1]) / ori_h,
+            (left_up[0] + right_down[0]) / (2 * ori_w),
+            (left_up[1] + right_down[1]) / (2 * ori_h),
+            (right_down[0] - left_up[0]) / ori_w,
+            (right_down[1] - left_up[1]) / ori_h,
         ]
 
-        resizedImage = resizedImage.astype("float32")
-        resizedImage /= 255.0
+        resized_image = resized_image.astype("float32")
+        resized_image /= 255.0
 
-        return resizedImage, new_labels
+        return resized_image, new_labels

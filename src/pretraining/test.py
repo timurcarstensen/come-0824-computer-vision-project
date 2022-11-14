@@ -1,29 +1,26 @@
-import cv2 as cv
-from new_data_loader import *
+# standard library imports
+
+# third party imports
 from torch.utils.data import DataLoader
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
 from torch.autograd import Variable
-from time import time
+import numpy as np
+
+# local imports (i.e. our own code)
+import src.data_handlers.data_handlers
+from src.data_loaders.data_loaders import DataLoaderPreTrain
 
 
-# img = cv.imread('/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/ccdp_base/01-86_91-298&341_449&414-458&394_308&410_304&357_454&341-0_0_14_28_24_26_29-124-24.jpg')
-#print(img)
-#img = cv.imread('/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/splits/erster_test.txt')
-imgSize = (480, 480)
-img_dir = ['erster_test.txt']
-data = DataLoaderPreTrain(img_dir, imgSize)
+img_size = (480, 480)
+split_directories = ["train.txt"]
+data = DataLoaderPreTrain(split_file=split_directories, img_size=img_size)
 print(data)
-trainloader = DataLoader(data, batch_size=1, shuffle=True)
-print(trainloader)
+train_loader = DataLoader(data, batch_size=1, shuffle=True)
+print(train_loader)
 
-# for batch, (x, y) in enumerate(trainloader):
-#     # x,y = data
-#     print(batch)
-#     print(x)
-#     print(y)
 
 class wR2(nn.Module):
     def __init__(self, num_classes=1000):
@@ -124,6 +121,7 @@ class wR2(nn.Module):
         x = self.classifier(x11)
         return x
 
+
 numClasses = 4
 model_conv = wR2(numClasses)
 
@@ -136,17 +134,16 @@ lrScheduler = lr_scheduler.StepLR(optimizer_conv, step_size=5, gamma=0.1)
 epoch_start = 0
 
 
-
 def train_model(model, criterion, optimizer, num_epochs=25):
     # since = time.time()
     inner_criterion = nn.L1Loss()
     for epoch in range(epoch_start, num_epochs):
         lossAver = []
         model.train(True)
-        
+
         # start = time()
 
-        for i, train_data in enumerate(trainloader):
+        for i, train_data in enumerate(train_loader):
             XI, YI = train_data
             # print('%s/%s %s' % (i, times, time()-start))
             YI = np.array([el.numpy() for el in YI]).T
@@ -171,7 +168,7 @@ def train_model(model, criterion, optimizer, num_epochs=25):
             # Compute and print loss
             running_loss = 0.0
             print(f"length y_pred: {len(y_pred)}, batch_size: {batchSize}")
-            
+
             # loss getting split up, 80% weight on the x, y coordinates, 20% on the width and height of the bounding box
             if len(y_pred[0]) == batchSize:
                 if use_gpu:
@@ -193,8 +190,8 @@ def train_model(model, criterion, optimizer, num_epochs=25):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                lrScheduler.step() # should be called after optimizer.step()
-                #torch.save(model.state_dict(), storeName)
+                lrScheduler.step()  # should be called after optimizer.step()
+                # torch.save(model.state_dict(), storeName)
             # if i % 50 == 1:
             #     with open(args["writeFile"], "a") as outF:
             #         outF.write(
@@ -217,6 +214,7 @@ def train_model(model, criterion, optimizer, num_epochs=25):
 
     return model
 
+
 epochs = 2
 model_conv = train_model(model_conv, criterion, optimizer_conv, num_epochs=epochs)
 
@@ -226,5 +224,3 @@ model_conv = train_model(model_conv, criterion, optimizer_conv, num_epochs=epoch
 #     resizedImage, new_labels = data.get_item(i)
 #     print(f"resized img: {resizedImage}")
 #     print(f"label: {new_labels}")
-
-
