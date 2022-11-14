@@ -19,26 +19,7 @@ split_directories = ["train.txt"]
 data = DataLoaderPreTrain(
     split_file=split_directories, img_size=img_size, test_mode=False
 )
-print(data)
 train_loader = DataLoader(data, batch_size=1, shuffle=True)
-print(train_loader)
-# define image size
-imgSize = (480, 480)
-# define txt file with image locations
-img_dir = ["erster_test.txt"]
-
-data = DataLoaderPreTrain(img_dir, imgSize)
-# data = DataLoaderTrain(img_dir, imgSize)
-# data = DataLoaderTest(img_dir, imgSize)
-
-trainloader = DataLoader(data, batch_size=1, shuffle=True)
-
-# for batch, (x, lbl, name) in enumerate(trainloader):
-#     print(f"Batch: {batch}")
-#     print(f"x: {x}")
-#     # print(f"y: {y}")
-#     print(f"lbl: {lbl}")
-#     print(f"name: {name}")
 
 
 class wR2(nn.Module):
