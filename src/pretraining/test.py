@@ -9,11 +9,11 @@ from torch.autograd import Variable
 from time import time
 
 
-img = cv.imread('/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/ccdp_base/01-86_91-298&341_449&414-458&394_308&410_304&357_454&341-0_0_14_28_24_26_29-124-24.jpg')
+# img = cv.imread('/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/ccdp_base/01-86_91-298&341_449&414-458&394_308&410_304&357_454&341-0_0_14_28_24_26_29-124-24.jpg')
 #print(img)
 #img = cv.imread('/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/splits/erster_test.txt')
 imgSize = (480, 480)
-img_dir = ['/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/splits/erster_test.txt']
+img_dir = ['erster_test.txt']
 data = DataLoaderPreTrain(img_dir, imgSize)
 print(data)
 trainloader = DataLoader(data, batch_size=1, shuffle=True)
@@ -160,6 +160,10 @@ def train_model(model, criterion, optimizer, num_epochs=25):
                 print(f"y: {y}")
             # Forward pass: Compute predicted y by passing x to the model
             y_pred = model(x)
+
+            # Transposing tensors s.t. we can slice along the columns of the predictions and calculate the losses properly
+            y_pred = y_pred.T
+            y = y.T
             print(f"Predictions: {y_pred}")
             print(f"slice: {y_pred[:][:2]}")
             print(f"slice2: {y_pred[:][2:]}")
@@ -167,7 +171,9 @@ def train_model(model, criterion, optimizer, num_epochs=25):
             # Compute and print loss
             running_loss = 0.0
             print(f"length y_pred: {len(y_pred)}, batch_size: {batchSize}")
-            if len(y_pred) == batchSize:
+            
+            # loss getting split up, 80% weight on the x, y coordinates, 20% on the width and height of the bounding box
+            if len(y_pred[0]) == batchSize:
                 if use_gpu:
                     loss += 0.8 * nn.L1Loss().cuda()(y_pred[:][:2], y[:][:2])
                     loss += 0.2 * nn.L1Loss().cuda()(y_pred[:][2:], y[:][2:])
@@ -175,10 +181,10 @@ def train_model(model, criterion, optimizer, num_epochs=25):
                     loss1 = 0.8 * inner_criterion(y_pred[:][:2], y[:][:2])
                     print(f"loss1: {loss1}")
                     loss = loss1
-                    # loss2 = 0.2 * inner_criterion(y_pred[:][2:], y[:][2:])
+                    loss2 = 0.2 * inner_criterion(y_pred[:][2:], y[:][2:])
                     # print(f"loss2: {loss2}")
-                    # loss = loss1 + loss2
-                    running_loss += loss1.item() #+ loss2.item()
+                    loss = loss1 + loss2
+                    running_loss += loss1.item() + loss2.item()
                 # print(f"loss: {loss}, type: {type(loss)}, value: {loss.item()}, val: {loss.data[0]}")
                 lossAver.append(running_loss)
                 print(f"loss: {running_loss}")

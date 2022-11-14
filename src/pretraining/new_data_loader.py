@@ -3,22 +3,28 @@ from torch.utils.data import DataLoader
 from imutils import paths
 import cv2 as cv
 import numpy as np
+import pathlib
+import os
+
+data_dir =f"{pathlib.Path(__file__).parent.parent.parent.resolve()}/resources/data/" 
+
+image_directory = data_dir + "test_images/splits/"
 
 class DataLoaderPreTrain(Dataset):
     def __init__(self, img_dir, imgSize, is_transform=None):
-        self.img_dir = img_dir
-        # print(f"Image dir: {self.img_dir}")
+        self.img_dir = [image_directory + elem for elem in img_dir]
+        print(f"Image dir: {self.img_dir}")
         # print(f"type Image dir: {type(self.img_dir)}")
         self.img_paths = []
         # print(f"Length img dir: {len(img_dir)}")
-        for i in range(len(img_dir)):
+        for i in range(len(self.img_dir)):
             # file = open(img_dir[i])
             # file_list = file.readlines()
-            with open(img_dir[i]) as f:
+            with open(self.img_dir[i]) as f:
                 lines = f.read().splitlines()
             for line in lines:
-                self.img_paths.append(line)
-        # print(f"Image paths: {self.img_paths}")
+                self.img_paths.append(f"{data_dir}test_images/{line}")
+        print(f"Image paths: {self.img_paths}")
         self.img_size = imgSize
         # print(f"size: {self.img_size}")
         self.is_transform = is_transform
