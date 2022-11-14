@@ -9,11 +9,11 @@ from torch.autograd import Variable
 from time import time
 
 
-img = cv.imread('/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/ccdp_base/01-86_91-298&341_449&414-458&394_308&410_304&357_454&341-0_0_14_28_24_26_29-124-24.jpg')
+img = cv.imread('/work/ines-tp2022/topics-in-cv/ide_sync_dir/tobias/resources/data/test_images/ccdp_base/01-86_91-298&341_449&414-458&394_308&410_304&357_454&341-0_0_14_28_24_26_29-124-24.jpg')
 #print(img)
 #img = cv.imread('/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/splits/erster_test.txt')
 imgSize = (480, 480)
-img_dir = ['/Users/lukaskirchdorfer/Development/UniMannheim/CVProject/come-0824-computer-vision-project/resources/data/test_images/splits/erster_test.txt']
+img_dir = ['/work/ines-tp2022/topics-in-cv/ide_sync_dir/tobias/resources/data/test_images/splits/erster_test.txt']
 data = DataLoaderPreTrain(img_dir, imgSize)
 print(data)
 trainloader = DataLoader(data, batch_size=1, shuffle=True)
