@@ -9,9 +9,16 @@ import tarfile
 # 3rd party imports
 import gdown
 
+# setting up the paths
+# setting the path to the data directory
 os.environ[
     "DATA_DIR"
 ] = f"{pathlib.Path(__file__).parent.parent.parent.resolve()}/resources/data/"
+
+# setting the path to the model weights directory
+os.environ[
+    "MODEL_DIR"
+] = f"{pathlib.Path(__file__).parent.parent.resolve()}/model_weights/"
 
 DATASET_GDRIVE_ID = "1rdEsCUcIUaYOVRkx5IMTRNA7PcGMmSgc"
 
