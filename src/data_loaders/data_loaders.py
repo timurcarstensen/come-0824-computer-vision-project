@@ -17,13 +17,13 @@ class DataLoaderPreTrain(Dataset):
     def __init__(
         self,
         split_file: Union[str, List[str]],
-        img_size: Tuple,
+        img_size: Tuple[int, int],
         is_transform: bool = None,
         test_mode: bool = False,
     ):
         """
         Initialises the Pretraining Dataloader
-        :param split_file: The file containing the list of images to be used for pretraining
+        :param split_file: The file containing the list of images to be used for training
         :param img_size: desired size of the images (width, height)
         :param is_transform: @Lukas: was soll hier hin?
         :param test_mode: if true, use the test_images dir; else, use the full dataset
