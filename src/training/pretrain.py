@@ -1,5 +1,6 @@
 # standard library imports
 import os
+from typing import Optional
 
 # third party imports
 from torch.utils.data import DataLoader
@@ -21,13 +22,13 @@ def pretrain_model(
     model: nn.Module,
     train_loader: DataLoader,
     optimizer: optim.Optimizer,
-    batch_size: int = 16,
-    num_epochs: int = 25,
-    use_gpu: bool = False,
-    criterion=nn.L1Loss(),
-    lr_scheduler_step_size: int = 5,
-    lr_scheduler_gamma: float = 0.1,
-    save_model: bool = True,
+    batch_size: Optional[int] = 16,
+    num_epochs: Optional[int] = 300,
+    use_gpu: Optional[bool] = False,
+    criterion: torch.nn.modules.loss._Loss = nn.L1Loss(),
+    lr_scheduler_step_size: Optional[int] = 5,
+    lr_scheduler_gamma: Optional[float] = 0.1,
+    save_model: Optional[bool] = True,
 ):
     # initialize the learning rate scheduler
     scheduler = lr_scheduler.StepLR(
@@ -40,16 +41,17 @@ def pretrain_model(
         for i, train_data in enumerate(train_loader):
             XI, YI = train_data
             YI = np.array([elem.numpy() for elem in YI]).T
+            # TODO: stop using torch.autograd.Variable
             if use_gpu:
-                x = Variable(XI.cuda(0))
-                y = Variable(torch.FloatTensor(YI).cuda(0), requires_grad=False)
+                x = Variable(XI.cuda())
+                y = Variable(torch.FloatTensor(YI).cuda(), requires_grad=False)
             else:
                 x = Variable(XI)
                 y = Variable(torch.FloatTensor(YI), requires_grad=False)
             # Forward pass: Compute predicted y by passing x to the model
             y_pred = model(x)
 
-            # Transposing tensors s.t. we can slice along the columns of the predictions and calculate the losses properly
+            # Transposing s.t. we can slice along the columns of the predictions and calculate the losses properly
             y_pred = y_pred.T
             y = y.T
 
@@ -66,7 +68,6 @@ def pretrain_model(
                     loss2 = 0.2 * criterion(y_pred[:][2:], y[:][2:])
                 loss = loss1 + loss2
                 running_loss += loss1.item() + loss2.item()
-                print(f"loss: {loss}")
                 loss_avg.append(running_loss)
                 # print(f"loss: {running_loss}")
 
@@ -76,7 +77,7 @@ def pretrain_model(
                 optimizer.step()
                 scheduler.step()  # should be called after optimizer.step()
                 # torch.save(model.state_dict(), storeName)
-        print("%s %s\n" % (epoch, sum(loss_avg) / len(loss_avg)))
+        print(f"epoch {epoch} average loss: {sum(loss_avg) / len(loss_avg)}")
 
     if save_model:
         print("Saving model...")
@@ -95,7 +96,7 @@ if __name__ == "__main__":
     # TODO: add DataParallel for multi-GPU training (cf. wR2.py)
     split_directories = ["train.txt"]
 
-    batch_size = 8
+    batch_size = 512
 
     pretrain_loader = DataLoader(
         dataset=DataLoaderPreTrain(
@@ -103,12 +104,17 @@ if __name__ == "__main__":
         ),
         batch_size=batch_size,
         shuffle=True,
-        num_workers=4,
+        num_workers=7,
     )
 
     num_classes = 4
-
     detection_model = DetectionModule(num_classes)
+
+    if torch.cuda.is_available():
+        detection_model = torch.nn.DataParallel(
+            detection_model, device_ids=[0, 1, 2, 4, 5, 6, 7]
+        )
+        detection_model = detection_model.cuda()
 
     trained_model = pretrain_model(
         model=detection_model,
