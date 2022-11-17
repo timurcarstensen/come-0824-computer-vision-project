@@ -1,5 +1,6 @@
 # standard library imports
-from typing import Optional, List, Tuple
+from typing import Optional
+import os
 
 # 3rd party imports
 import torch.nn as nn
@@ -22,52 +23,31 @@ class RecognitionModule(nn.Module):
         super(RecognitionModule, self).__init__()
         self.load_detection_module(path=pretrained_model_path, num_points=num_points)
         self.classifier1 = nn.Sequential(
-            # nn.Dropout(),
             nn.Linear(53248, 128),
-            # nn.ReLU(inplace=True),
-            # nn.Dropout(),
             nn.Linear(128, prov_num),
         )
         self.classifier2 = nn.Sequential(
-            # nn.Dropout(),
             nn.Linear(53248, 128),
-            # nn.ReLU(inplace=True),
-            # nn.Dropout(),
             nn.Linear(128, alpha_num),
         )
         self.classifier3 = nn.Sequential(
-            # nn.Dropout(),
             nn.Linear(53248, 128),
-            # nn.ReLU(inplace=True),
-            # nn.Dropout(),
             nn.Linear(128, ad_num),
         )
         self.classifier4 = nn.Sequential(
-            # nn.Dropout(),
             nn.Linear(53248, 128),
-            # nn.ReLU(inplace=True),
-            # nn.Dropout(),
             nn.Linear(128, ad_num),
         )
         self.classifier5 = nn.Sequential(
-            # nn.Dropout(),
             nn.Linear(53248, 128),
-            # nn.ReLU(inplace=True),
-            # nn.Dropout(),
             nn.Linear(128, ad_num),
         )
         self.classifier6 = nn.Sequential(
-            # nn.Dropout(),
             nn.Linear(53248, 128),
-            # nn.ReLU(inplace=True),
-            # nn.Dropout(),
             nn.Linear(128, ad_num),
         )
         self.classifier7 = nn.Sequential(
-            # nn.Dropout(),
             nn.Linear(53248, 128),
-            # nn.ReLU(inplace=True),
-            # nn.Dropout(),
             nn.Linear(128, ad_num),
         )
 
@@ -78,10 +58,10 @@ class RecognitionModule(nn.Module):
                 self.detection_module, device_ids=range(torch.cuda.device_count())
             )
         if path:
+            path = f"{os.getenv('MODEL_DIR')}{path}"
+            print("Loading detection module from: {}".format(path))
             self.detection_module.load_state_dict(torch.load(f=path))
-            # self.wR2 = self.wR2.cuda()
-        # for param in self.wR2.parameters():
-        #     param.requires_grad = False
+            print("Detection module loaded successfully.")
 
     def forward(self, x):
         x0 = self.detection_module.module.features[0](x)
