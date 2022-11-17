@@ -24,9 +24,11 @@ DATASET_GDRIVE_ID = "1rdEsCUcIUaYOVRkx5IMTRNA7PcGMmSgc"
 
 dataset_detected = False
 
-if os.path.isfile(
-    "/work/ines-tp2022/topics-in-cv/dataset/CCPD2019.tar.xz"
-) or os.path.isfile(f"{os.getenv('DATA_DIR')}/CCPD2019.tar.xz"):
+if (
+    os.path.isfile("/work/ines-tp2022/topics-in-cv/dataset/CCPD2019.tar.xz")
+    or os.path.isfile(f"{os.getenv('DATA_DIR')}CCPD2019.tar.xz")
+    or os.path.isdir(f"{os.getenv('DATA_DIR')}CCPD2019")
+):
     dataset_detected = True
 
 if not dataset_detected:
