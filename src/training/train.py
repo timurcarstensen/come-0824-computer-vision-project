@@ -5,6 +5,7 @@ from __future__ import print_function, division
 import os
 import argparse
 from time import time
+from typing import Optional, Tuple, List
 
 # 3rd party imports
 
@@ -12,51 +13,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torch.autograd import Variable
 import numpy as np
 from torch.optim import lr_scheduler
 
 # local imports (i.e. our own code)
+import src.data_handlers.data_handlers
 from src.modules.recognition import RecognitionModule
 from src.data_loaders.data_loaders import DataLoaderTrain, DataLoaderTest
-
-
-ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--images", required=True, help="path to the input file")
-ap.add_argument("-n", "--epochs", default=10000, help="epochs for train")
-ap.add_argument("-b", "--batchsize", default=5, help="batch size for train")
-ap.add_argument("-se", "--start_epoch", required=True, help="start epoch for train")
-ap.add_argument("-t", "--test", required=True, help="dirs for test")
-ap.add_argument("-r", "--resume", default="111", help="file for re-train")
-ap.add_argument("-f", "--folder", required=True, help="folder to store model")
-ap.add_argument("-w", "--writeFile", default="fh02.out", help="file for output")
-args = vars(ap.parse_args())
-
-wR2Path = "./wR2/wR2.pth2"
-use_gpu = torch.cuda.is_available()
-print(use_gpu)
-
-num_classes = 7
-num_points = 4
-classify_num = 35
-img_size = (480, 480)
-# lpSize = (128, 64)
-prov_num, alpha_num, ad_num = 38, 25, 35
-batch_size = int(args["batchsize"]) if use_gpu else 2
-train_dirs = args["images"].split(",")
-test_dirs = args["test"].split(",")
-model_folder = (
-    str(args["folder"]) if str(args["folder"])[-1] == "/" else str(args["folder"]) + "/"
-)
-store_name = model_folder + "fh02.pth"
-if not os.path.isdir(model_folder):
-    os.mkdir(model_folder)
-
-epochs = int(args["epochs"])
-#   initialize the output file
-if not os.path.isfile(args["writeFile"]):
-    with open(args["writeFile"], "wb") as outF:
-        pass
 
 
 def get_n_params(model):
@@ -69,57 +32,29 @@ def get_n_params(model):
     return pp
 
 
-epoch_start = int(args["start_epoch"])
-resume_file = str(args["resume"])
-if not resume_file == "111":
-    # epoch_start = int(resume_file[resume_file.find('pth') + 3:]) + 1
-    if not os.path.isfile(resume_file):
-        print("fail to load existed model! Existing ...")
-        exit(0)
-    print("Load existed model! %s" % resume_file)
-    model_conv = RecognitionModule(num_points=num_points)
-    model_conv = torch.nn.DataParallel(
-        model_conv, device_ids=range(torch.cuda.device_count())
-    )
-    model_conv.load_state_dict(torch.load(resume_file))
-    model_conv = model_conv.cuda()
-else:
-    model_conv = RecognitionModule(num_points=num_points, pretrained_model_path=wR2Path)
-    if use_gpu:
-        model_conv = torch.nn.DataParallel(
-            model_conv, device_ids=range(torch.cuda.device_count())
-        )
-        model_conv = model_conv.cuda()
-
-print(model_conv)
-print(get_n_params(model_conv))
-
-criterion = nn.CrossEntropyLoss()
-# optimizer_conv = optim.RMSprop(model_conv.parameters(), lr=0.01, momentum=0.9)
-optimizer_conv = optim.SGD(model_conv.parameters(), lr=0.001, momentum=0.9)
-
-dst = DataLoaderTrain(train_dirs, img_size)
-train_loader = DataLoader(dst, batch_size=batch_size, shuffle=True, num_workers=8)
-scheduler = lr_scheduler.StepLR(optimizer_conv, step_size=5, gamma=0.1)
-
-
 def is_equal(label_gt, label_pred):
     compare = [1 if int(label_gt[i]) == int(label_pred[i]) else 0 for i in range(7)]
     return sum(compare)
 
 
-def eval(model, test_dirs):
+def evaluate(
+    model: nn.Module,
+    test_dirs: List[str] | str,
+    img_size: Tuple[int, int],
+    use_gpu: Optional[bool] = False,
+):
     count, error, correct = 0, 0, 0
-    dst = DataLoaderTest(test_dirs, img_size)
-    test_loader = DataLoader(dst, batch_size=1, shuffle=True, num_workers=8)
+    dataset = DataLoaderTest(test_dirs, img_size)
+    test_loader = DataLoader(dataset=dataset, batch_size=1, shuffle=True, num_workers=8)
     start = time()
-    for i, (XI, labels, ims) in enumerate(test_loader):
+    for idx, (XI, labels, ims) in enumerate(test_loader):
         count += 1
-        YI = [[int(ee) for ee in el.split("_")[:7]] for el in labels]
+        YI = [[int(elem) for elem in label.split("_")[:7]] for label in labels]
+
         if use_gpu:
-            x = Variable(XI.cuda(0))
+            x = XI.clone().detach().cuda()
         else:
-            x = Variable(XI)
+            x = XI.clone().detach()
         # Forward pass: Compute predicted y by passing x to the model
 
         fps_pred, y_pred = model(x)
@@ -138,78 +73,147 @@ def eval(model, test_dirs):
     return count, correct, error, float(correct) / count, (time() - start) / count
 
 
-def train_model(model, criterion, optimizer, num_epochs=25):
-    # since = time.time()
-    for epoch in range(epoch_start, num_epochs):
+def train_model(
+    model: nn.Module,
+    optimizer: optim.Optimizer,
+    img_size: Tuple[int, int],
+    batch_size: int,
+    split_files: List[str],
+    use_gpu: Optional[bool] = False,
+    character_criterion: torch.nn.modules.loss._Loss = nn.CrossEntropyLoss(),
+    num_epochs: Optional[int] = 25,
+    store_name: Optional[str] = "rpnet.pt",
+):
+    # initialize the dataloader
+    dataloader = DataLoader(
+        dataset=DataLoaderTrain(split_file=split_files, img_size=img_size),
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=8,
+    )
+
+    # initialize the learning rate scheduler
+    scheduler = lr_scheduler.StepLR(optimizer=optimizer, step_size=5, gamma=0.1)
+
+    for epoch in range(num_epochs):
         loss_avg = []
-        model.train(True)
-        scheduler.step()
+        # set the model to training mode
+        model.train(mode=True)
+
         start = time()
 
-        for i, (XI, Y, labels, ims) in enumerate(train_loader):
+        for idx, (XI, Y, labels, ims) in enumerate(dataloader):
             if not len(XI) == batch_size:
                 continue
 
-            YI = [[int(ee) for ee in el.split("_")[:7]] for el in labels]
-            Y = np.array([el.numpy() for el in Y]).T
+            YI = [[int(elem) for elem in label.split("_")[:7]] for label in labels]
+            Y = np.array([elem.numpy() for elem in Y]).T
             if use_gpu:
-                x = Variable(XI.cuda(0))
-                y = Variable(torch.FloatTensor(Y).cuda(0), requires_grad=False)
+                x = XI.clone().detach().cuda()
+                y = torch.tensor(data=Y, dtype=torch.float32, requires_grad=False).cuda()
             else:
-                x = Variable(XI)
-                y = Variable(torch.FloatTensor(Y), requires_grad=False)
+                x = XI.clone().detach()
+                y = torch.tensor(data=Y, dtype=torch.float32, requires_grad=False)
             # Forward pass: Compute predicted y by passing x to the model
 
-            try:
-                fps_pred, y_pred = model(x)
-            except:
-                continue
+            fps_pred, y_pred = model(x)
 
             # Compute and print loss
-            loss = 0.0
-            loss += 0.8 * nn.L1Loss().cuda()(fps_pred[:][:2], y[:][:2])
-            loss += 0.2 * nn.L1Loss().cuda()(fps_pred[:][2:], y[:][2:])
-            for j in range(7):
-                l = Variable(torch.LongTensor([el[j] for el in YI]).cuda(0))
-                loss += criterion(y_pred[j], l)
+            loss = torch.tensor(data=[0.0]).cuda(
+                device=torch.device("cuda") if torch.device.type == "cuda" else None
+            )
+            if use_gpu:
+                loss += 0.8 * nn.L1Loss().cuda()(fps_pred[:][:2], y[:][:2])
+                loss += 0.2 * nn.L1Loss().cuda()(fps_pred[:][2:], y[:][2:])
+
+                for j in range(7):
+                    l = torch.tensor(
+                        data=[elem[j] for elem in YI], dtype=torch.long
+                    ).cuda()
+
+                    loss += character_criterion(y_pred[j], l)
+            else:
+                loss += 0.8 * nn.L1Loss()(fps_pred[:][:2], y[:][:2])
+                loss += 0.2 * nn.L1Loss()(fps_pred[:][2:], y[:][2:])
+
+                for j in range(7):
+                    l = torch.tensor(data=[elem[j] for elem in YI], dtype=torch.long)
+                    loss += character_criterion(y_pred[j], l)
 
             # Zero gradients, perform a backward pass, and update the weights.
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            scheduler.step()
 
-            try:
-                loss_avg.append(loss.data[0])
-            except:
-                pass
+            loss_avg.append(loss.item())
 
-            if i % 50 == 1:
-                with open(args["writeFile"], "a") as outF:
-                    outF.write(
-                        "train %s images, use %s seconds, loss %s\n"
-                        % (
-                            i * batch_size,
-                            time() - start,
-                            sum(loss_avg) / len(loss_avg)
-                            if len(loss_avg) > 0
-                            else "NoLoss",
-                        )
-                    )
-                torch.save(model.state_dict(), store_name)
-        print("%s %s %s\n" % (epoch, sum(loss_avg) / len(loss_avg), time() - start))
+            if not idx % 50:
+                print(
+                    f"Epoch: {epoch + 1}/{num_epochs}, "
+                    f"Iteration: {idx + 1}/{len(dataloader)}, "
+                    f"Loss: {np.mean(loss_avg):.4f}, "
+                    f"Time: {time() - start:.4f}"
+                )
+
+                loss_avg = []
+
+        # set the model to evaluation mode
         model.eval()
-        count, correct, error, precision, avgTime = eval(model, test_dirs)
-        with open(args["writeFile"], "a") as outF:
-            outF.write(
-                "%s %s %s\n" % (epoch, sum(loss_avg) / len(loss_avg), time() - start)
-            )
-            outF.write(
-                "*** total %s error %s precision %s avgTime %s\n"
-                % (count, error, precision, avgTime)
-            )
-        torch.save(model.state_dict(), store_name + str(epoch))
-        # save trained model to file
+
+        count, correct, error, precision, avg_time = evaluate(
+            model=model, test_dirs=test_dirs, img_size=img_size, use_gpu=use_gpu
+        )
+
+        print(f"*** total {count} error {error} precision {precision} avgTime {avg_time}")
+        torch.save(model.state_dict(), f"{os.getenv('MODEL_DIR')}{store_name}_{epoch}")
     return model
 
 
-model_conv = train_model(model_conv, criterion, optimizer_conv, num_epochs=epochs)
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    # ap.add_argument("-i", "--images", required=True, help="path to the input file")
+    ap.add_argument("-n", "--epochs", default=10000, help="epochs for train")
+    ap.add_argument("-b", "--batch_size", default=5, help="batch size for train")
+    # ap.add_argument("-se", "--start_epoch", required=True, help="start epoch for train")
+    # ap.add_argument("-t", "--test", required=True, help="dirs for test")
+    # ap.add_argument("-f", "--folder", required=True, help="folder to store model")
+    args = vars(ap.parse_args())
+
+    num_points = 4
+    batch_size = 128
+    train_dirs = ["train.txt"]
+    test_dirs = ["test.txt"]
+    img_size = (480, 480)
+
+    epochs = int(args["epochs"])
+
+    # instantiate model
+    recognition_model = RecognitionModule(
+        num_points=num_points,
+        pretrained_model_path="pretrained_detection_module.pt",
+        prov_num=38,
+        alpha_num=25,
+        ad_num=35,
+    )
+    if torch.cuda.is_available():
+        recognition_model = torch.nn.DataParallel(
+            recognition_model, device_ids=range(torch.cuda.device_count())
+        )
+        recognition_model = recognition_model.cuda()
+
+    print(get_n_params(recognition_model))
+
+    # optimizer_conv = optim.RMSprop(model_conv.parameters(), lr=0.01, momentum=0.9)
+
+    # train the recognition model end to end
+    trained_recognition_model = train_model(
+        model=recognition_model,
+        img_size=img_size,
+        split_files=train_dirs,
+        batch_size=batch_size,
+        use_gpu=torch.cuda.is_available(),
+        character_criterion=nn.CrossEntropyLoss(),
+        optimizer=optim.Adam(recognition_model.parameters(), lr=0.001),
+        num_epochs=epochs,
+    )
