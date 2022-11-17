@@ -1,16 +1,11 @@
 # standard library imports
-import pathlib
 import os
 from typing import List, Tuple, Union
 
 # third party imports
 from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
-from imutils import paths
 import cv2 as cv
 import numpy as np
-
-# local imports (i.e. our own code)
 
 
 class DataLoaderPreTrain(Dataset):
@@ -80,7 +75,7 @@ class DataLoaderTrain(Dataset):
 
     def __init__(
         self,
-        split_file: Union[str, List[str]],
+        split_file: List[str] | str,
         img_size: Tuple,
         is_transform: bool = None,
         test_mode: bool = False,
@@ -117,7 +112,7 @@ class DataLoaderTrain(Dataset):
         resized_image = np.transpose(resized_image, (2, 0, 1))
         resized_image = resized_image.astype("float32")
         resized_image /= 255.0
-        lbl = img_name.split("/")[-1].rsplit(".", 1)[0].split("-")[-3]
+        labels = img_name.split("/")[-1].rsplit(".", 1)[0].split("-")[-3]
 
         iname = img_name.rsplit("/", 1)[-1].rsplit(".", 1)[0].split("-")
         [left_up, right_down] = [
@@ -131,11 +126,7 @@ class DataLoaderTrain(Dataset):
             (right_down[1] - left_up[1]) / ori_h,
         ]
 
-        return (
-            resized_image,
-            new_labels,
-            lbl,
-        )
+        return resized_image, new_labels, labels, img_name
 
 
 class DataLoaderTest(Dataset):
@@ -179,6 +170,6 @@ class DataLoaderTest(Dataset):
         resized_image = np.transpose(resized_image, (2, 0, 1))
         resized_image = resized_image.astype("float32")
         resized_image /= 255.0
-        lbl = img_name.split("/")[-1].split(".")[0].split("-")[-3]
+        labels = img_name.split("/")[-1].split(".")[0].split("-")[-3]
 
-        return resized_image, lbl, img_name
+        return resized_image, labels, img_name
