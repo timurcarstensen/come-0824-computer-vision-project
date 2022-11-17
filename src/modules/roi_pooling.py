@@ -1,86 +1,51 @@
+# Adaption of the roi_pooling module from the original implementation
+
 # standard library imports
-from typing import List, Tuple, Optional
+from typing import Tuple, Optional
 
 # 3rd party imports
 import torch
-from torch.autograd import Variable
-from torch.autograd.function import Function
-from torch.nn import AdaptiveMaxPool2d
-
-
-def roi_pooling(
-    t: torch.TensorType,
-    rois: torch.TensorType,
-    size: Tuple[int, int] = (7, 7),
-    spatial_scale: Optional[float] = 1.0,
-):
-    if not rois.dim() == 2 and rois.size(1) == 5:
-        raise ValueError("rois should be a 2D tensor of shape (num_rois, 5)")
-
-    if not (isinstance(t, torch.Tensor) and isinstance(rois, torch.Tensor)):
-        raise TypeError("t and rois should be torch.Tensor")
-
-    output = []
-    rois = rois.data.float()
-
-    rois[:, 1:].mul_(spatial_scale)
-    rois = rois.long()
-    for idx, roi in enumerate(rois):
-        im_idx = roi[0]
-        im = t.narrow(0, im_idx, 1)[..., roi[2] : (roi[4] + 1), roi[1] : (roi[3] + 1)]
-        output.append(AdaptiveMaxPool2d(size)(im))
-
-    return torch.cat(output, 0)
+from torchvision.ops import roi_pool
 
 
 def roi_pooling_ims(
-    t: torch.TensorType,
-    rois: torch.TensorType,
-    size: Tuple[int, int] = (7, 7),
+    t: torch.Tensor,
+    rois: torch.Tensor,
+    size: Tuple[int, int] = (8, 16),
     spatial_scale: Optional[float] = 1.0,
 ):
-    # written for one roi one image
-    # size: (w, h)
-
+    """
+    Wrapper for torchvision.ops.roi_pool
+    :param t: input tensor of shape (N, C, H, W)
+    :param rois: input tensor of shape (N, 5) where N is the number of rois, 5 is (batch_index, x1, y1, x2, y2)
+    :param size: output size of the pooling operation
+    :param spatial_scale: scale factor for the input coordinates
+    :return:
+    """
+    # checking input arguments for type and shape
     if not (rois.dim() == 2 and len(t) == len(rois) and rois.size(1) == 4):
         raise ValueError("rois should be a 2D tensor of shape (num_rois, 5)")
 
     if not (isinstance(t, torch.Tensor) and isinstance(rois, torch.Tensor)):
         raise TypeError("t and rois should be torch.Tensor")
 
-    output = []
-    rois = rois.data.float()
+    # adapting rois to the format required by torchvision.ops.roi_pool (i.e. (batch_index, x1, y1, x2, y2))
+    rois = torch.stack(
+        [
+            torch.cat(
+                (
+                    torch.tensor(data=[idx]).cuda(
+                        device="cuda" if torch.device.type == "cuda" else None
+                    ),
+                    elem,
+                )
+            )
+            for idx, elem in enumerate(rois)
+        ]
+    )
 
-    rois[:, 1:].mul_(spatial_scale)
-    rois = rois.long()
-    for idx, roi in enumerate(rois):
-        im = t.narrow(0, idx, 1)[..., roi[1] : (roi[3] + 1), roi[0] : (roi[2] + 1)]
-        output.append(AdaptiveMaxPool2d(size)(im))
-
-    return torch.cat(output, 0)
+    return roi_pool(input=t, boxes=rois, output_size=size, spatial_scale=spatial_scale)
 
 
 if __name__ == "__main__":
-    synthetic_input = Variable(torch.rand(2, 1, 10, 10), requires_grad=True)
-    regions_of_interest = Variable(
-        torch.LongTensor([[1, 2, 7, 8], [3, 3, 8, 8]]), requires_grad=False
-    )
-
-    # AdaptiveMaxPool2d.apply(input, rois, 8, 8)
-    out = roi_pooling_ims(synthetic_input, regions_of_interest, size=(8, 8))
-    out.backward(out.data.clone().uniform_())
-
-    synthetic_input = Variable(torch.rand(2, 1, 10, 10), requires_grad=True)
-    regions_of_interest = Variable(
-        torch.LongTensor([[0, 1, 2, 7, 8], [0, 3, 3, 8, 8], [1, 3, 3, 8, 8]]),
-        requires_grad=False,
-    )
-    regions_of_interest = Variable(
-        torch.LongTensor([[0, 3, 3, 8, 8]]), requires_grad=False
-    )
-
-    # out = adaptive_max_pool(input, (3, 3))
-    # out.backward(out.data.clone().uniform_())
-
-    out = roi_pooling(synthetic_input, regions_of_interest, size=(3, 3))
-    out.backward(out.data.clone().uniform_())
+    pass
