@@ -4,7 +4,6 @@ from typing import Optional, List, Tuple
 # 3rd party imports
 import torch.nn as nn
 import torch
-from torch.autograd import Variable
 
 # local imports (i.e. our own code)
 from src.modules.detection import DetectionModule
@@ -74,9 +73,10 @@ class RecognitionModule(nn.Module):
 
     def load_detection_module(self, path: str, num_points: int):
         self.detection_module = DetectionModule(num_points)
-        self.detection_module = torch.nn.DataParallel(
-            self.detection_module, device_ids=range(torch.cuda.device_count())
-        )
+        if torch.cuda.is_available():
+            self.detection_module = torch.nn.DataParallel(
+                self.detection_module, device_ids=range(torch.cuda.device_count())
+            )
         if path:
             self.detection_module.load_state_dict(torch.load(f=path))
             # self.wR2 = self.wR2.cuda()
@@ -99,42 +99,42 @@ class RecognitionModule(nn.Module):
         box_loc = self.detection_module.module.classifier(x9)
 
         h1, w1 = _x1.data.size()[2], _x1.data.size()[3]
-        p1 = Variable(
-            torch.FloatTensor(
-                [[w1, 0, 0, 0], [0, h1, 0, 0], [0, 0, w1, 0], [0, 0, 0, h1]]
-            ).cuda(),
+        p1 = torch.tensor(
+            data=[[w1, 0, 0, 0], [0, h1, 0, 0], [0, 0, w1, 0], [0, 0, 0, h1]],
             requires_grad=False,
-        )
+            dtype=torch.float32,
+        ).cuda(device=torch.device("cuda") if torch.device.type == "cuda" else None)
+
         h2, w2 = _x3.data.size()[2], _x3.data.size()[3]
-        p2 = Variable(
-            torch.FloatTensor(
-                [[w2, 0, 0, 0], [0, h2, 0, 0], [0, 0, w2, 0], [0, 0, 0, h2]]
-            ).cuda(),
+
+        p2 = torch.tensor(
+            data=[[w2, 0, 0, 0], [0, h2, 0, 0], [0, 0, w2, 0], [0, 0, 0, h2]],
             requires_grad=False,
-        )
+            dtype=torch.float32,
+        ).cuda(device=torch.device("cuda") if torch.device.type == "cuda" else None)
+
         h3, w3 = _x5.data.size()[2], _x5.data.size()[3]
-        p3 = Variable(
-            torch.FloatTensor(
-                [[w3, 0, 0, 0], [0, h3, 0, 0], [0, 0, w3, 0], [0, 0, 0, h3]]
-            ).cuda(),
+        p3 = torch.tensor(
+            data=[[w3, 0, 0, 0], [0, h3, 0, 0], [0, 0, w3, 0], [0, 0, 0, h3]],
             requires_grad=False,
-        )
+            dtype=torch.float32,
+        ).cuda(device=torch.device("cuda") if torch.device.type == "cuda" else None)
 
         # x, y, w, h --> x1, y1, x2, y2
-        assert box_loc.data.size()[1] == 4
-        postfix = Variable(
-            torch.FloatTensor(
-                [[1, 0, 1, 0], [0, 1, 0, 1], [-0.5, 0, 0.5, 0], [0, -0.5, 0, 0.5]]
-            ).cuda(),
+        if not box_loc.data.size()[1] == 4:
+            raise ValueError("box_loc.data.size()[1] != 4")
+
+        postfix = torch.tensor(
+            data=[[1, 0, 1, 0], [0, 1, 0, 1], [-0.5, 0, 0.5, 0], [0, -0.5, 0, 0.5]],
             requires_grad=False,
-        )
+            dtype=torch.float32,
+        ).cuda(device=torch.device("cuda") if torch.device.type == "cuda" else None)
+
         box_new = box_loc.mm(postfix).clamp(min=0, max=1)
 
-        # input = Variable(torch.rand(2, 1, 10, 10), requires_grad=True)
-        # rois = Variable(torch.LongTensor([[0, 1, 2, 7, 8], [0, 3, 3, 8, 8], [1, 3, 3, 8, 8]]), requires_grad=False)
-        roi1 = roi_pooling_ims(_x1, box_new.mm(p1), size=(16, 8))
-        roi2 = roi_pooling_ims(_x3, box_new.mm(p2), size=(16, 8))
-        roi3 = roi_pooling_ims(_x5, box_new.mm(p3), size=(16, 8))
+        roi1 = roi_pooling_ims(t=_x1, rois=box_new.mm(p1), size=(8, 16))
+        roi2 = roi_pooling_ims(t=_x3, rois=box_new.mm(p2), size=(8, 16))
+        roi3 = roi_pooling_ims(t=_x5, rois=box_new.mm(p3), size=(8, 16))
         rois = torch.cat((roi1, roi2, roi3), 1)
 
         _rois = rois.view(rois.size(0), -1)
