@@ -1,6 +1,7 @@
 # standard library imports
 import os
 from typing import Optional
+import time
 
 # third party imports
 from torch.utils.data import DataLoader
@@ -34,49 +35,71 @@ def pretrain_model(
     scheduler = lr_scheduler.StepLR(
         optimizer=optimizer, step_size=lr_scheduler_step_size, gamma=lr_scheduler_gamma
     )
+
+    start = time.time()
+
     for epoch in range(num_epochs):
         loss_avg = []
         model.train(mode=True)
 
-        for i, train_data in enumerate(train_loader):
+        for idx, train_data in enumerate(train_loader):
             XI, YI = train_data
             YI = np.array([elem.numpy() for elem in YI]).T
             # TODO: stop using torch.autograd.Variable
             if use_gpu:
-                x = Variable(XI.cuda())
-                y = Variable(torch.FloatTensor(YI).cuda(), requires_grad=False)
+                x = XI.clone().detach().cuda(device=torch.device("cuda:6"))
+                y = torch.tensor(YI, dtype=torch.float32, requires_grad=False).cuda(
+                    device=torch.device("cuda:6")
+                )
             else:
-                x = Variable(XI)
-                y = Variable(torch.FloatTensor(YI), requires_grad=False)
+                x = XI.clone().detach()
+                y = torch.tensor(YI, dtype=torch.float32, requires_grad=False)
             # Forward pass: Compute predicted y by passing x to the model
-            y_pred = model(x)
 
-            # Transposing s.t. we can slice along the columns of the predictions and calculate the losses properly
-            y_pred = y_pred.T
-            y = y.T
+            y_pred = model(x)
 
             # Compute and print loss
             running_loss = 0.0
 
-            # loss getting split up, 80% weight on the x, y coordinates, 20% on the width and height of the bounding box
-            if len(y_pred[0]) == batch_size:
-                if use_gpu:
-                    loss1 = 0.8 * criterion.cuda()(y_pred[:][:2], y[:][:2])
-                    loss2 = 0.2 * criterion.cuda()(y_pred[:][2:], y[:][2:])
-                else:
-                    loss1 = 0.8 * criterion(y_pred[:][:2], y[:][:2])
-                    loss2 = 0.2 * criterion(y_pred[:][2:], y[:][2:])
+            if len(y_pred) == batch_size:
+
+                loss1 = 0.8 * criterion.cuda(
+                    device=torch.device("cuda:6") if torch.device.type == "cuda" else None
+                )(y_pred[:, :2], y[:, :2])
+
+                loss2 = 0.2 * criterion.cuda(
+                    device=torch.device("cuda:6") if torch.device.type == "cuda" else None
+                )(y_pred[:, 2:], y[:, 2:])
+
                 loss = loss1 + loss2
                 running_loss += loss1.item() + loss2.item()
                 loss_avg.append(running_loss)
-                # print(f"loss: {running_loss}")
 
                 # Zero gradients, perform a backward pass, and update the weights.
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                scheduler.step()  # should be called after optimizer.step()
-                # torch.save(model.state_dict(), storeName)
+                scheduler.step()
+
+                # if not idx % 50:
+                #     print(
+                #         f"Epoch: {epoch + 1}/{num_epochs}, "
+                #         f"Iteration: {idx + 1}/{len(train_loader)}, "
+                #         f"Loss: {np.mean(loss_avg):.4f}, "
+                #         f"Time: {time.time() - start:.4f}"
+                #     )
+                #
+                #     loss_avg = []
+
+                print(
+                    f"Epoch: {epoch + 1}/{num_epochs}, "
+                    f"Iteration: {idx + 1}/{len(train_loader)}, "
+                    f"Loss: {np.mean(loss_avg):.4f}, "
+                    f"Time: {time.time() - start:.4f}"
+                )
+
+                loss_avg = []
+
         print(f"epoch {epoch} average loss: {sum(loss_avg) / len(loss_avg)}")
 
     if save_model:
@@ -96,15 +119,13 @@ if __name__ == "__main__":
     # TODO: add DataParallel for multi-GPU training (cf. wR2.py)
     split_directories = ["train.txt"]
 
-    batch_size = 512
+    batch_size = 256
 
     pretrain_loader = DataLoader(
         dataset=DataLoaderPreTrain(
             split_file=split_directories, img_size=(480, 480), test_mode=False
         ),
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=7,
+        num_workers=8,
     )
 
     num_classes = 4
