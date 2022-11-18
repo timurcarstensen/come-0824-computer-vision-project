@@ -7,6 +7,7 @@ from pytorch_lightning.loggers import WandbLogger
 
 # local imports (i.e. our own code)
 import src.data_handlers.data_handlers
+import src.utils.utils
 from src.data_loaders.data_loaders import DataLoaderPreTrain
 from src.modules.lit_detection import LitDetectionModule
 
@@ -32,7 +33,6 @@ if __name__ == "__main__":
         max_epochs=100,
         logger=WandbLogger(
             project="cv-project",
-            name="pretrain",
             log_model=True,
         ),
         auto_scale_batch_size=True,
