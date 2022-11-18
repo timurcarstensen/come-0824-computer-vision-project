@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class DetectionModule(nn.Module):
-    def __init__(self, num_classes=1000):
+    def __init__(self, num_points=1000):
         super(DetectionModule, self).__init__()
         hidden1 = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=48, kernel_size=5, padding=2, stride=2),
@@ -92,7 +92,7 @@ class DetectionModule(nn.Module):
             # nn.ReLU(inplace=True),
             nn.Linear(100, 100),
             # nn.ReLU(inplace=True),
-            nn.Linear(100, num_classes),
+            nn.Linear(100, num_points),
         )
 
     def forward(self, x):
