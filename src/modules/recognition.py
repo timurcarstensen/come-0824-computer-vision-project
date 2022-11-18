@@ -16,46 +16,46 @@ class RecognitionModule(nn.Module):
         self,
         num_points: Optional[int] = 4,
         pretrained_model_path: Optional[str] = None,
-        prov_num: Optional[int] = 38,
-        alpha_num: Optional[int] = 25,
-        ad_num: Optional[int] = 35,
+        province_num: Optional[int] = 38,
+        alphabet_num: Optional[int] = 25,
+        alphabet_numbers_num: Optional[int] = 35,
     ):
         super(RecognitionModule, self).__init__()
         self.load_detection_module(path=pretrained_model_path, num_points=num_points)
         self.classifier1 = nn.Sequential(
             nn.Linear(53248, 128),
-            nn.Linear(128, prov_num),
+            nn.Linear(128, province_num),
         )
         self.classifier2 = nn.Sequential(
             nn.Linear(53248, 128),
-            nn.Linear(128, alpha_num),
+            nn.Linear(128, alphabet_num),
         )
         self.classifier3 = nn.Sequential(
             nn.Linear(53248, 128),
-            nn.Linear(128, ad_num),
+            nn.Linear(128, alphabet_numbers_num),
         )
         self.classifier4 = nn.Sequential(
             nn.Linear(53248, 128),
-            nn.Linear(128, ad_num),
+            nn.Linear(128, alphabet_numbers_num),
         )
         self.classifier5 = nn.Sequential(
             nn.Linear(53248, 128),
-            nn.Linear(128, ad_num),
+            nn.Linear(128, alphabet_numbers_num),
         )
         self.classifier6 = nn.Sequential(
             nn.Linear(53248, 128),
-            nn.Linear(128, ad_num),
+            nn.Linear(128, alphabet_numbers_num),
         )
         self.classifier7 = nn.Sequential(
             nn.Linear(53248, 128),
-            nn.Linear(128, ad_num),
+            nn.Linear(128, alphabet_numbers_num),
         )
 
     def load_detection_module(self, path: str, num_points: int):
-        self.detection_module = DetectionModule(num_points)
+        self.detection_module = DetectionModule(num_points=num_points)
         if torch.cuda.is_available():
             self.detection_module = torch.nn.DataParallel(
-                self.detection_module, device_ids=range(torch.cuda.device_count())
+                self.detection_module, device_ids=[0, 4, 5, 6]
             )
         if path:
             path = f"{os.getenv('MODEL_DIR')}{path}"
