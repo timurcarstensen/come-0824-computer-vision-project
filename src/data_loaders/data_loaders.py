@@ -1,5 +1,6 @@
 # standard library imports
 import os
+import time
 from typing import List, Tuple, Union
 
 # third party imports
@@ -45,6 +46,7 @@ class DataLoaderPreTrain(Dataset):
         img_name = self.img_paths[index]
         img = cv.imread(img_name)
         resized_image = cv.resize(img, self.img_size)
+
         resized_image = np.reshape(
             resized_image,
             (resized_image.shape[2], resized_image.shape[0], resized_image.shape[1]),
@@ -56,7 +58,10 @@ class DataLoaderPreTrain(Dataset):
         ]
 
         ori_w, ori_h = float(img.shape[1]), float(img.shape[0])
-        assert img.shape[0] == 1160
+
+        if img.shape[0] != 1160:
+            raise ValueError("Image width is not 1160!")
+
         new_labels = [
             (left_up[0] + right_down[0]) / (2 * ori_w),
             (left_up[1] + right_down[1]) / (2 * ori_h),
