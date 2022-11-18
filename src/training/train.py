@@ -42,11 +42,29 @@ def evaluate(
     test_dirs: List[str] | str,
     img_size: Tuple[int, int],
     use_gpu: Optional[bool] = False,
+    standalone: Optional[bool] = False,
+    model_path: Optional[str] = None,
 ):
+    if standalone:
+        if not model_path:
+            raise ValueError("model_path must be provided when standalone is True")
+
+        print("Loading rpnet model weights...")
+        model.load_state_dict(torch.load(f=f"{os.getenv('MODEL_DIR')}{model_path}"))
+        print("Loaded rpnet model weights.")
+
     count, error, correct = 0, 0, 0
-    dataset = DataLoaderTest(test_dirs, img_size)
-    test_loader = DataLoader(dataset=dataset, batch_size=1, shuffle=True, num_workers=8)
+    test_loader = DataLoader(
+        dataset=DataLoaderTest(split_file=test_dirs, img_size=img_size),
+        batch_size=1,
+        shuffle=True,
+        num_workers=8,
+    )
+
+    model.eval()
+
     start = time()
+
     for idx, (XI, labels, ims) in enumerate(test_loader):
         count += 1
         YI = [[int(elem) for elem in label.split("_")[:7]] for label in labels]
@@ -57,19 +75,36 @@ def evaluate(
             x = XI.clone().detach()
         # Forward pass: Compute predicted y by passing x to the model
 
-        fps_pred, y_pred = model(x)
+        _, y_pred = model(x)
 
-        output_y = [el.data.cpu().numpy().tolist() for el in y_pred]
+        output_y = [elem.data.cpu().numpy().tolist() for elem in y_pred]
+
         label_pred = [t[0].index(max(t[0])) for t in output_y]
 
         #   compare YI, outputY
+
         try:
+
             if is_equal(label_pred, YI[0]) == 7:
                 correct += 1
+
             else:
                 pass
+
         except:
             error += 1
+
+        if idx % 500 == 0:
+            print(
+                "total %s correct %s error %s precision %s avg_time %s"
+                % (
+                    count,
+                    correct,
+                    error,
+                    float(correct) / count,
+                    (time() - start) / count,
+                )
+            )
     return count, correct, error, float(correct) / count, (time() - start) / count
 
 
@@ -118,6 +153,12 @@ def train_model(
 
             fps_pred, y_pred = model(x)
 
+            print(f"fps_pred: {fps_pred}")
+            print("y", y)
+
+            print("y_pred", y_pred)
+            print("YI", YI)
+
             # Compute and print loss
             loss = torch.tensor(data=[0.0]).cuda(
                 device=torch.device("cuda") if torch.device.type == "cuda" else None
@@ -158,22 +199,32 @@ def train_model(
 
                 loss_avg = []
 
+        # TODO: fix evaluation
         # set the model to evaluation mode
-        model.eval()
+        # model.eval()
+        #
+        # count, correct, error, precision, avg_time = evaluate(
+        #     model=model, test_dirs=test_dirs, img_size=img_size, use_gpu=use_gpu
+        # )
 
-        count, correct, error, precision, avg_time = evaluate(
-            model=model, test_dirs=test_dirs, img_size=img_size, use_gpu=use_gpu
-        )
+        # print(
+        #     f"*** total {count} error {error} precision {precision} avgTime {avg_time}"
+        # )
 
-        print(f"*** total {count} error {error} precision {precision} avgTime {avg_time}")
-        torch.save(model.state_dict(), f"{os.getenv('MODEL_DIR')}{store_name}_{epoch}")
+        path = f"{os.getenv('MODEL_DIR')}_{epoch}_{store_name}"
+
+        print(f"Saving model to {path}")
+        # TODO: change saving to model.module.state_dict() as discussed here:
+        #  https://discuss.pytorch.org/t/how-to-load-dataparallel-model-which-trained-using-multiple-gpus/146005
+        torch.save(obj=model.state_dict(), f=path)
+        print("Model saved.")
     return model
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     # ap.add_argument("-i", "--images", required=True, help="path to the input file")
-    ap.add_argument("-n", "--epochs", default=10000, help="epochs for train")
+    ap.add_argument("-n", "--epochs", default=100, help="epochs for train")
     ap.add_argument("-b", "--batch_size", default=5, help="batch size for train")
     # ap.add_argument("-se", "--start_epoch", required=True, help="start epoch for train")
     # ap.add_argument("-t", "--test", required=True, help="dirs for test")
@@ -181,7 +232,7 @@ if __name__ == "__main__":
     args = vars(ap.parse_args())
 
     num_points = 4
-    batch_size = 128
+    batch_size = 1
     train_dirs = ["train.txt"]
     test_dirs = ["test.txt"]
     img_size = (480, 480)
@@ -192,13 +243,13 @@ if __name__ == "__main__":
     recognition_model = RecognitionModule(
         num_points=num_points,
         pretrained_model_path="pretrained_detection_module.pt",
-        prov_num=38,
-        alpha_num=25,
-        ad_num=35,
+        province_num=38,
+        alphabet_num=25,
+        alphabet_numbers_num=35,
     )
     if torch.cuda.is_available():
         recognition_model = torch.nn.DataParallel(
-            recognition_model, device_ids=range(torch.cuda.device_count())
+            recognition_model, device_ids=[0, 4, 5, 6]
         )
         recognition_model = recognition_model.cuda()
 
@@ -217,3 +268,11 @@ if __name__ == "__main__":
         optimizer=optim.Adam(recognition_model.parameters(), lr=0.001),
         num_epochs=epochs,
     )
+    # evaluate(
+    #     model=recognition_model,
+    #     test_dirs=["test.txt"],
+    #     img_size=img_size,
+    #     use_gpu=torch.cuda.is_available(),
+    #     standalone=False,
+    #     model_path="rpnet.pt",
+    # )
