@@ -9,7 +9,7 @@ import cv2 as cv
 import numpy as np
 
 
-class DataLoaderPreTrain(Dataset):
+class PretrainDataset(Dataset):
     def __init__(
         self,
         split_file: Union[str, List[str]],
@@ -75,7 +75,7 @@ class DataLoaderPreTrain(Dataset):
         return resized_image, new_labels
 
 
-class DataLoaderTrain(Dataset):
+class TrainDataset(Dataset):
     """used for training data in rp net"""
 
     def __init__(
@@ -89,7 +89,7 @@ class DataLoaderTrain(Dataset):
         Initialises the Train Dataloader
         :param split_file: The file containing the list of images to be used for training
         :param img_size: desired size of the images (width, height)
-        :param is_transform: @Lukas: was soll hier hin?
+        :param is_transform: TODO: @Lukas: was soll hier hin?
         :param test_mode: if true, use the test_images dir; else, use the full dataset
         """
 
@@ -134,7 +134,7 @@ class DataLoaderTrain(Dataset):
         return resized_image, new_labels, labels, img_name
 
 
-class DataLoaderTest(Dataset):
+class TestDataset(Dataset):
     def __init__(
         self,
         split_file: Union[str, List[str]],
