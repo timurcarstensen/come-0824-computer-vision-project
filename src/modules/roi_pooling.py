@@ -11,11 +11,13 @@ from torchvision.ops import roi_pool
 def roi_pooling_ims(
     t: torch.Tensor,
     rois: torch.Tensor,
+    device: torch.device,
     size: Tuple[int, int] = (8, 16),
     spatial_scale: Optional[float] = 1.0,
 ):
     """
     Wrapper for torchvision.ops.roi_pool
+    :param device: device to store the tensor on
     :param t: input tensor of shape (N, C, H, W)
     :param rois: input tensor of shape (N, 5) where N is the number of rois, 5 is (batch_index, x1, y1, x2, y2)
     :param size: output size of the pooling operation
@@ -34,9 +36,7 @@ def roi_pooling_ims(
         [
             torch.cat(
                 (
-                    torch.tensor(data=[idx]).cuda(
-                        device="cuda" if torch.device.type == "cuda" else None
-                    ),
+                    torch.tensor(data=[idx], device=device),
                     elem,
                 )
             )
