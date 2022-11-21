@@ -8,7 +8,7 @@ from pytorch_lightning.loggers import WandbLogger
 # local imports (i.e. our own code)
 import src.data_handlers.data_handlers
 import src.utils.utils
-from src.data_loaders.data_loaders import DataLoaderPreTrain
+from src.datasets.datasets import PretrainDataset
 from src.modules.lit_detection import LitDetectionModule
 
 if __name__ == "__main__":
@@ -20,9 +20,10 @@ if __name__ == "__main__":
     batch_size = 256
 
     pretrain_loader = DataLoader(
-        dataset=DataLoaderPreTrain(
+        dataset=PretrainDataset(
             split_file=split_directories, img_size=(480, 480), test_mode=False
         ),
+        shuffle=True,
         num_workers=8,
     )
 
