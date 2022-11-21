@@ -113,7 +113,7 @@ class LitDetectionModule(pl.LightningModule):
         loss2 = 0.2 * nn.L1Loss()(y_pred[:, 2:], y[:, 2:])
         loss = loss1 + loss2
 
-        self.log("train_loss", loss)
+        self.log("pretrain_loss", loss)
         return loss
 
     def configure_optimizers(self):
