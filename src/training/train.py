@@ -1,9 +1,5 @@
-# Compared to fh0.py
-# fh02.py remove the redundant ims in model input
 # standard library imports
-from __future__ import print_function, division
 import os
-import argparse
 from time import time
 from typing import Optional, Tuple, List
 
@@ -13,6 +9,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
+
 import pytorch_lightning as pl
 from pytorch_lightning.loggers.wandb import WandbLogger
 
@@ -21,21 +18,6 @@ import src.data_handlers.data_handlers
 import src.utils.utils
 from src.modules.lit_recognition import LitRecognitionModule
 from src.datasets.datasets import TrainDataset, TestDataset
-
-
-def get_n_params(model):
-    pp = 0
-    for p in list(model.parameters()):
-        nn = 1
-        for s in list(p.size()):
-            nn = nn * s
-        pp += nn
-    return pp
-
-
-def is_equal(label_gt, label_pred):
-    compare = [1 if int(label_gt[i]) == int(label_pred[i]) else 0 for i in range(7)]
-    return sum(compare)
 
 
 def evaluate(
@@ -86,7 +68,7 @@ def evaluate(
 
         try:
 
-            if is_equal(label_pred, YI[0]) == 7:
+            if LitRecognitionModule._is_equal(label_pred, YI[0]) == 7:
                 correct += 1
 
             else:
@@ -119,7 +101,7 @@ if __name__ == "__main__":
         val_set=TestDataset(split_file=["val.txt"], img_size=img_size),
         num_points=num_points,
         batch_size=256,
-        # pretrained_model_path="pretrained_detection_module.pt",
+        pretrained_model_path="model.ckpt",
     )
 
     trainer = pl.Trainer(
@@ -129,7 +111,7 @@ if __name__ == "__main__":
         log_every_n_steps=1,
         logger=WandbLogger(
             project="cv-project",
-            name="training",
+            name="training-pretrained",
             log_model=True,
         ),
         auto_scale_batch_size=True,
@@ -137,7 +119,5 @@ if __name__ == "__main__":
         accelerator="gpu",
         devices=[1, 2, 4, 5, 6, 7],
     )
-
-    # trainer.tune(model)
 
     trainer.fit(model=model)
