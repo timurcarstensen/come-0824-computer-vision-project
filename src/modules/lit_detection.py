@@ -5,8 +5,11 @@ import numpy as np
 
 
 class LitDetectionModule(pl.LightningModule):
-    def __init__(self, num_points=1000):
+    def __init__(self, num_points=4):
         super().__init__()
+
+        self.num_points = num_points
+
         hidden1 = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=48, kernel_size=5, padding=2, stride=2),
             nn.BatchNorm2d(num_features=48),
@@ -94,7 +97,7 @@ class LitDetectionModule(pl.LightningModule):
             # nn.ReLU(inplace=True),
             nn.Linear(100, 100),
             # nn.ReLU(inplace=True),
-            nn.Linear(100, num_points),
+            nn.Linear(100, self.num_points),
         )
 
     def forward(self, x):
