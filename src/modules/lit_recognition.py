@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 
 # local imports (i.e. our own code)
+import src.data_handlers.data_handlers
 from src.modules.lit_detection import LitDetectionModule
 from src.modules.roi_pooling import roi_pooling_ims
 
@@ -29,8 +30,18 @@ class LitRecognitionModule(pl.LightningModule):
         plate_character_criterion=nn.CrossEntropyLoss(),
     ):
         super().__init__()
+
+        # 1. setting variables
+
+        # init the detection module
         self.detection_module = LitDetectionModule(num_points=num_points)
-        self.load_detection_module(path=pretrained_model_path, num_points=num_points)
+
+        # load the pretrained detection module if a path is provided
+        if pretrained_model_path:
+            self.detection_module.load_from_checkpoint(
+                checkpoint_path=f"{os.getenv('MODEL_DIR')}{pretrained_model_path}",
+                strict=False,
+            )
 
         self.plate_character_criterion = plate_character_criterion
 
@@ -42,6 +53,7 @@ class LitRecognitionModule(pl.LightningModule):
         self.correct: int = 0
         self.incorrect: int = 0
 
+        # 2. defining the model
         self.classifier1 = nn.Sequential(
             nn.Linear(53248, 128),
             nn.Linear(128, province_num),
@@ -70,13 +82,6 @@ class LitRecognitionModule(pl.LightningModule):
             nn.Linear(53248, 128),
             nn.Linear(128, alphabet_numbers_num),
         )
-
-    def load_detection_module(self, path: str, num_points: int):
-        if path:
-            path = f"{os.getenv('MODEL_DIR')}{path}"
-            print("Loading detection module from: {}".format(path))
-            self.detection_module.load_state_dict(torch.load(f=path))
-            print("Detection module loaded successfully.")
 
     def forward(self, x):
         x0 = self.detection_module.features[0](x)
