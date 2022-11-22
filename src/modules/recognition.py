@@ -58,7 +58,7 @@ class RecognitionModule(nn.Module):
                 self.detection_module, device_ids=[0, 4, 5, 6]
             )
         if path:
-            path = f"{os.getenv('MODEL_DIR')}{path}"
+            path = f"{os.getenv('LOG_DIR')}{path}"
             print("Loading detection module from: {}".format(path))
             self.detection_module.load_state_dict(torch.load(f=path))
             print("Detection module loaded successfully.")
