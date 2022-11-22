@@ -2,8 +2,7 @@
 
 # standard library imports
 import os
-import time
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 # third party imports
 from torch.utils.data import Dataset
