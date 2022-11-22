@@ -246,13 +246,3 @@ class LitRecognitionModule(pl.LightningModule):
             optimizer=optimizer, step_size=5, gamma=0.1
         )
         return [optimizer], [lr_scheduler]
-
-    @staticmethod
-    def _is_equal(label_gt, label_pred) -> int:
-        """
-        Used to calculate the accuracy of the model in validation
-        :param label_gt: “ground truth” labels
-        :param label_pred: “predicted” labels
-        :return: number of correct predictions
-        """
-        return sum([1 if int(label_gt[i]) == int(label_pred[i]) else 0 for i in range(7)])
