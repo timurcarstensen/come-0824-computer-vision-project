@@ -1,3 +1,5 @@
+# implements the torch.utils.data.Dataset class for the pretraining, training and testing/validation sets
+
 # standard library imports
 import os
 import time
@@ -12,13 +14,13 @@ import numpy as np
 class PretrainDataset(Dataset):
     def __init__(
         self,
-        split_file: Union[str, List[str]],
-        img_size: Tuple[int, int],
+        split_file: List[str] | str = ["train.txt"],
+        img_size: Tuple[int, int] = (480, 480),
         is_transform: bool = None,
         test_mode: bool = False,
     ):
         """
-        Initialises the Pretraining Dataloader
+        Initialises the Pretraining dataset
         :param split_file: The file containing the list of images to be used for training
         :param img_size: desired size of the images (width, height)
         :param is_transform: @Lukas: was soll hier hin?
@@ -76,17 +78,15 @@ class PretrainDataset(Dataset):
 
 
 class TrainDataset(Dataset):
-    """used for training data in rp net"""
-
     def __init__(
         self,
-        split_file: List[str] | str,
-        img_size: Tuple,
+        split_file: List[str] | str = ["train.txt"],
+        img_size: Tuple = (480, 480),
         is_transform: bool = None,
         test_mode: bool = False,
     ):
         """
-        Initialises the Train Dataloader
+        Initialises the Train Dataset
         :param split_file: The file containing the list of images to be used for training
         :param img_size: desired size of the images (width, height)
         :param is_transform: TODO: @Lukas: was soll hier hin?
@@ -137,13 +137,13 @@ class TrainDataset(Dataset):
 class TestDataset(Dataset):
     def __init__(
         self,
-        split_file: Union[str, List[str]],
-        img_size: Tuple,
+        split_file: List[str] | str = ["test.txt"],
+        img_size: Tuple[int, int] = (480, 480),
         is_transform: bool = None,
         test_mode: bool = False,
     ):
         """
-        Initialises the Test Dataloader
+        Initialises the Test Dataset
         :param split_file: The file containing the list of images to be used for testing
         :param img_size: desired size of the images (width, height)
         :param is_transform: @Lukas: was soll hier hin?
