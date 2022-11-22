@@ -5,7 +5,7 @@ from pytorch_lightning.loggers import WandbLogger
 
 # local imports (i.e. our own code)
 import src.utils.utils
-from src.datasets.datasets import PretrainDataset
+from src.utils.datasets import PretrainDataset
 from src.modules.lit_detection import LitDetectionModule
 
 if __name__ == "__main__":
