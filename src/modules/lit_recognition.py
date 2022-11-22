@@ -5,14 +5,12 @@ import itertools
 from statistics import mean
 
 # 3rd party imports
-import numpy as np
 import torch.nn as nn
 import torch
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 
 # local imports (i.e. our own code)
-import src.data_handlers.data_handlers
 from src.modules.lit_detection import LitDetectionModule
 from src.modules.roi_pooling import roi_pooling_ims
 
@@ -41,7 +39,7 @@ class LitRecognitionModule(pl.LightningModule):
         # load the pretrained detection module if a path is provided
         if pretrained_model_path:
             self.detection_module.load_from_checkpoint(
-                checkpoint_path=f"{os.getenv('MODEL_DIR')}{pretrained_model_path}",
+                checkpoint_path=f"{os.getenv('LOG_DIR')}{pretrained_model_path}",
                 strict=False,
             )
 
