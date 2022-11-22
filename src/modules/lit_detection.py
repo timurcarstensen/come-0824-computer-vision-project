@@ -5,7 +5,7 @@ import numpy as np
 
 
 class LitDetectionModule(pl.LightningModule):
-    def __init__(self, num_points=4):
+    def __init__(self, num_points):
         super().__init__()
 
         self.num_points = num_points
