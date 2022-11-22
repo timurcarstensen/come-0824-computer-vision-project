@@ -1,7 +1,6 @@
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-import numpy as np
 
 
 class LitDetectionModule(pl.LightningModule):
