@@ -1,39 +1,32 @@
 # third party imports
 from torch.utils.data import DataLoader
-import numpy as np
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 
-
 # local imports (i.e. our own code)
-import src.data_handlers.data_handlers
 import src.utils.utils
 from src.datasets.datasets import PretrainDataset
 from src.modules.lit_detection import LitDetectionModule
 
 if __name__ == "__main__":
 
-    # TODO: add ArgParser
-    # TODO: add DataParallel for multi-GPU training (cf. wR2.py)
-    split_directories = ["train.txt"]
-
     batch_size = 256
 
     pretrain_loader = DataLoader(
-        dataset=PretrainDataset(
-            split_file=split_directories, img_size=(480, 480), test_mode=False
-        ),
+        dataset=PretrainDataset(split_file=["train.txt"]),
+        batch_size=batch_size,
         shuffle=True,
         num_workers=8,
     )
 
-    num_points = 4
-    detection_model = LitDetectionModule(num_points=num_points)
+    detection_model = LitDetectionModule(num_points=4)
 
     trainer = pl.Trainer(
         max_epochs=100,
         logger=WandbLogger(
+            entity="timurcarstensen",
             project="cv-project",
+            group="pretraining",
             log_model=True,
         ),
         auto_scale_batch_size=True,
