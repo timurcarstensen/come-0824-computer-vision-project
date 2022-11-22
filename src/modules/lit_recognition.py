@@ -1,6 +1,8 @@
 # standard library imports
 from typing import Optional
 import os
+import itertools
+from statistics import mean
 
 # 3rd party imports
 import numpy as np
@@ -167,36 +169,54 @@ class LitRecognitionModule(pl.LightningModule):
             persistent_workers=True,
         )
 
-    # def val_dataloader(self):
-    #     return DataLoader(
-    #         dataset=self.val_set,
-    #         batch_size=1,
-    #         shuffle=False,
-    #         num_workers=self.num_dataloader_workers,
-    #         persistent_workers=True,
-    #     )
+    def val_dataloader(self):
+        return DataLoader(
+            dataset=self.val_set,
+            batch_size=16,
+            shuffle=False,
+            num_workers=self.num_dataloader_workers,
+            persistent_workers=True,
+        )
 
-    # def validation_step(self, batch, batch_idx):
-    #     # TODO: spend more time on validation
-    #     # TODO: maybe adapt this for larger validation batch sizes for speed
-    #     x_i, labels, ims = batch
-    #
-    #     y_i = [[int(elem) for elem in label.split("_")[:7]] for label in labels]
-    #
-    #     x = x_i.clone().detach()
-    #
-    #     _, y_pred = self(x)
-    #
-    #     output_y = [elem.data.cpu().numpy().tolist() for elem in y_pred]
-    #
-    #     label_pred = [t[0].index(max(t[0])) for t in output_y]
-    #
-    #     if LitRecognitionModule._is_equal(label_pred, y_i[0]) == 7:
-    #         self.correct += 1
-    #     else:
-    #         self.incorrect += 1
-    #
-    #     return float(self.correct) / batch_idx
+    def validation_step(self, batch, batch_idx):
+
+        x, labels, ims = batch
+
+        # convert the labels to tensor of shape (7, batch_size)
+        y_i = torch.tensor(
+            data=[[int(elem) for elem in label.split("_")[:7]] for label in labels],
+            device=self.device,
+        ).T
+
+        _, y_pred = self(x)
+
+        # getting the argmax for each of the 7 digits for each element in the batch (also shape of (7, batch_size))
+        y_pred = torch.stack(tensors=[torch.argmax(input=elem, dim=1) for elem in y_pred])
+
+        # getting the element wise equality of the predictions and the labels
+        equality = torch.sum(
+            input=torch.eq(input=y_pred, other=y_i), dim=0, dtype=torch.float32
+        )
+
+        return {
+            "correct": torch.where(equality == 7, 1.0, 0.0).tolist(),
+            "correct_label_predictions": torch.mean(equality),
+        }
+
+    def validation_epoch_end(self, outputs) -> None:
+        self.log(
+            "val_precision",
+            mean(
+                list(itertools.chain.from_iterable(elem["correct"] for elem in outputs))
+            ),
+            sync_dist=True,
+        )
+
+        self.log(
+            "avg_correct_labels",
+            sum([elem["correct_label_predictions"] for elem in outputs]) / len(outputs),
+            sync_dist=True,
+        )
 
     def training_step(self, batch, batch_idx):
         x, y, labels, ims = batch
