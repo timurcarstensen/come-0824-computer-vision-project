@@ -16,9 +16,7 @@ os.environ[
 ] = f"{pathlib.Path(__file__).parent.parent.parent.resolve()}/resources/data/"
 
 # setting the path to the model weights directory
-os.environ[
-    "MODEL_DIR"
-] = f"{pathlib.Path(__file__).parent.parent.resolve()}/model_weights/"
+os.environ["LOG_DIR"] = f"{pathlib.Path(__file__).parent.parent.resolve()}/logs/"
 
 DATASET_GDRIVE_ID = "1rdEsCUcIUaYOVRkx5IMTRNA7PcGMmSgc"
 
