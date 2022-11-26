@@ -11,8 +11,8 @@ from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 
 # local imports (i.e. our own code)
-from src.modules.lit_detection import LitDetectionModule
-from src.modules.roi_pooling import roi_pooling_ims
+from .lit_detection import LitDetectionModule
+from .roi_pooling import roi_pooling_ims
 
 
 class LitRecognitionModule(pl.LightningModule):
