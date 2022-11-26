@@ -141,7 +141,7 @@ class LitDetectionModule(pl.LightningModule):
         :return: loss
         """
         x, y = batch
-        y = torch.tensor(data=[y], device=self.device, requires_grad=False)
+        y = torch.stack(tensors=y).T
 
         y_pred = self(x)
 
