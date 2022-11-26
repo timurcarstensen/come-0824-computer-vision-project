@@ -8,14 +8,15 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 
 # local imports (i.e. our own code)
 # noinspection PyUnresolvedReferences
-import src.utils.utils
-from src.modules.lit_recognition import LitRecognitionModule
-from src.utils.datasets import TrainDataset, TestDataset
+import utils.utils
+from modules.lit_recognition import LitRecognitionModule
+from utils.datasets import TrainDataset, TestDataset
 
 
 if __name__ == "__main__":
 
     # TODO: start using the same hyperparameters as the authors for comparability (i.e. optimizer, batch_size, etc.)
+    # TODO: check performance when using pretrained model from the git repo! (https://github.com/detectRecog/CCPD#demo)
     # initialise model (the train dataset is initialised with the default args)
 
     model = LitRecognitionModule(

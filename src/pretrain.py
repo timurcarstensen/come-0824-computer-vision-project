@@ -5,9 +5,9 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 
 # local imports (i.e. our own code)
 # noinspection PyUnresolvedReferences
-import src.utils.utils
-from src.utils.datasets import PretrainDataset
-from src.modules.lit_detection import LitDetectionModule
+import utils.utils
+from utils.datasets import PretrainDataset
+from modules.lit_detection import LitDetectionModule
 
 if __name__ == "__main__":
 
