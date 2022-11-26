@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 class LitDetectionModule(pl.LightningModule):
     def __init__(
         self,
-        pretrain_set: torch.utils.data.Dataset,
+        pretrain_set: torch.utils.data.Dataset = None,
         batch_size: int = 16,
         num_dataloader_workers: int = 8,
         num_points: int = 4,
