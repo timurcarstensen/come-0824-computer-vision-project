@@ -27,8 +27,21 @@ class LitRecognitionModule(pl.LightningModule):
         province_num: Optional[int] = 38,
         alphabet_num: Optional[int] = 25,
         alphabet_numbers_num: Optional[int] = 35,
-        plate_character_criterion=nn.CrossEntropyLoss(),
+        plate_character_criterion=nn.CrossEntropyLoss(),  # TODO: WHY ARE WE USING CROSS ENTROPY LOSS HERE?
     ):
+        """
+        Initialize the recognition module
+        :param train_set: “torch.utils.data.Dataset” for training
+        :param val_set: “torch.utils.data.Dataset” for validation
+        :param num_dataloader_workers: number of workers for the dataloader
+        :param batch_size: batch size
+        :param num_points: number of points for coordinates of the bounding box, should always be 4 (x, y, w, h)
+        :param pretrained_model_path: path to the pretrained model
+        :param province_num: number of provinces
+        :param alphabet_num: number of characters in the alphabet
+        :param alphabet_numbers_num: number of characters in the alphabet and numbers
+        :param plate_character_criterion: loss function for the plate character classifier
+        """
         super().__init__()
 
         # 1. setting variables
@@ -50,36 +63,55 @@ class LitRecognitionModule(pl.LightningModule):
         self.num_dataloader_workers = num_dataloader_workers
         self.batch_size = batch_size
 
-        self.correct: int = 0
-        self.incorrect: int = 0
-
+        # TODO: why are we using LINEAR classifiers??
         # 2. defining the model
         self.classifier1 = nn.Sequential(
+            # nn.Dropout(0.2),
             nn.Linear(53248, 128),
+            # nn.ReLU(inplace=True),
+            # nn.Dropout(0.2),
             nn.Linear(128, province_num),
         )
         self.classifier2 = nn.Sequential(
+            # nn.Dropout(0.2),
             nn.Linear(53248, 128),
+            # nn.ReLU(inplace=True),
+            # nn.Dropout(0.2),
             nn.Linear(128, alphabet_num),
         )
         self.classifier3 = nn.Sequential(
+            # nn.Dropout(0.2),
             nn.Linear(53248, 128),
+            # nn.ReLU(inplace=True),
+            # nn.Dropout(0.2),
             nn.Linear(128, alphabet_numbers_num),
         )
         self.classifier4 = nn.Sequential(
+            # nn.Dropout(0.2),
             nn.Linear(53248, 128),
+            # nn.ReLU(inplace=True),
+            # nn.Dropout(0.2),
             nn.Linear(128, alphabet_numbers_num),
         )
         self.classifier5 = nn.Sequential(
+            # nn.Dropout(0.2),
             nn.Linear(53248, 128),
+            # nn.ReLU(inplace=True),
+            # nn.Dropout(0.2),
             nn.Linear(128, alphabet_numbers_num),
         )
         self.classifier6 = nn.Sequential(
+            # nn.Dropout(0.2),
             nn.Linear(53248, 128),
+            # nn.ReLU(inplace=True),
+            # nn.Dropout(0.2),
             nn.Linear(128, alphabet_numbers_num),
         )
         self.classifier7 = nn.Sequential(
+            # nn.Dropout(0.2),
             nn.Linear(53248, 128),
+            # nn.ReLU(inplace=True),
+            # nn.Dropout(0.2),
             nn.Linear(128, alphabet_numbers_num),
         )
 
@@ -192,24 +224,62 @@ class LitRecognitionModule(pl.LightningModule):
         y_pred = torch.stack(tensors=[torch.argmax(input=elem, dim=1) for elem in y_pred])
 
         # getting the element wise equality of the predictions and the labels
-        equality = torch.sum(
+        per_sample_performance = torch.sum(
             input=torch.eq(input=y_pred, other=y_i), dim=0, dtype=torch.float32
         )
 
+        # summing over the correct predictions for each classifier
+        per_classifier_performance = torch.sum(
+            input=torch.eq(input=y_pred, other=y_i), dim=1, dtype=torch.float32
+        )
+
+        # reshaping s.t. we have tensors of shape (1, num_classifiers)
+        per_classifier_performance = per_classifier_performance.view(1, -1)
+
+        # calculating the mean accuracy for each classifier (for the current validation batch)
+        per_classifier_performance = torch.div(
+            input=per_classifier_performance, other=len(x)
+        )
+
         return {
-            "correct": torch.where(equality == 7, 1.0, 0.0).tolist(),
-            "correct_label_predictions": torch.mean(equality),
+            "correct_samples": torch.where(
+                per_sample_performance == 7, 1.0, 0.0
+            ).tolist(),
+            "classifier_performance": per_classifier_performance,
+            "correct_label_predictions": torch.mean(per_sample_performance),
         }
 
     def validation_epoch_end(self, outputs) -> None:
+
+        # TODO: is this accuracy or precision? (should be precision afaik)
+        # mean of accuracy for each classifier over the entire validation set
+        per_classifier_performance = torch.mean(
+            torch.stack(tensors=[elem["classifier_performance"] for elem in outputs]),
+            dim=0,
+        )
+
+        # logging per classifier performance
+        self.log_dict(
+            dictionary={
+                f"classifier_{str(i)}": per_classifier_performance[:, i] for i in range(7)
+            },
+            sync_dist=True,
+        )
+
+        # logging validation precision
         self.log(
             "val_precision",
             mean(
-                list(itertools.chain.from_iterable(elem["correct"] for elem in outputs))
+                list(
+                    itertools.chain.from_iterable(
+                        elem["correct_samples"] for elem in outputs
+                    )
+                )
             ),
             sync_dist=True,
         )
 
+        # logging the average number of correctly predicted labels per classifier
         self.log(
             "avg_correct_labels",
             sum([elem["correct_label_predictions"] for elem in outputs]) / len(outputs),
@@ -227,20 +297,26 @@ class LitRecognitionModule(pl.LightningModule):
 
         fps_pred, y_pred = self(x)
 
-        loss = torch.tensor(data=[0.0], device=self.device)
-        loss += 0.8 * nn.L1Loss()(fps_pred[:, :2], y[:, :2])
-        loss += 0.2 * nn.L1Loss()(fps_pred[:, 2:], y[:, 2:])
+        bounding_loss = torch.tensor(data=[0.0], device=self.device)
+        bounding_loss += 0.8 * nn.L1Loss()(fps_pred[:, :2], y[:, :2])
+        bounding_loss += 0.2 * nn.L1Loss()(fps_pred[:, 2:], y[:, 2:])
 
+        character_loss = torch.tensor(data=[0.0], device=self.device)
         for j in range(7):
             l = torch.tensor(
                 data=[elem[j] for elem in y_i], dtype=torch.long, device=self.device
             )
-            loss += self.plate_character_criterion(y_pred[j], l)
+            character_loss += self.plate_character_criterion(y_pred[j], l)
+
+        loss = bounding_loss + character_loss
 
         self.log("train_loss", loss)
+        self.log("bounding_loss", bounding_loss)
+        self.log("character_loss", character_loss)
         return loss
 
     def configure_optimizers(self):
+        # TODO: are we actually using the correct optimizer? i.e. the one from the paper with the correct HPs?
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
         lr_scheduler = torch.optim.lr_scheduler.StepLR(
             optimizer=optimizer, step_size=5, gamma=0.1
