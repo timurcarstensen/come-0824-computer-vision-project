@@ -8,6 +8,7 @@ import os
 # local imports (i.e. our own code)
 # data_handlers need to be imported s.t. the dataset is guaranteed to be in place and the necessary
 # environment variables are set
+# noinspection PyUnresolvedReferences
 from . import data_handlers
 
 # reading in the lists provinces, alphabet and alphabet_numbers from the pickle file
