@@ -150,6 +150,7 @@ class LitDetectionModule(pl.LightningModule):
         loss = loss1 + loss2
 
         # TODO: implement Intersection over Union (IoU) metric logging
+        #  (cf. https://torchmetrics.readthedocs.io/en/stable/detection/mean_average_precision.html)
         self.log("pretrain_loss", loss)
         return loss
 
