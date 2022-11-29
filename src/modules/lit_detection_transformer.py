@@ -1,17 +1,16 @@
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-import numpy as np
 from torch.utils.data import DataLoader
 
 
-class LitDetectionModule(pl.LightningModule):
+class LitDetectionTransformerModule(pl.LightningModule):
     def __init__(
-            self,
-            pretrain_set: torch.utils.data.Dataset = None,
-            batch_size: int = 16,
-            num_dataloader_workers: int = 8,
-            num_points: int = 4,
+        self,
+        pretrain_set: torch.utils.data.Dataset = None,
+        batch_size: int = 16,
+        num_dataloader_workers: int = 8,
+        num_points: int = 4,
     ):
         """
         Initializer for the LitDetectionModule class.
@@ -113,11 +112,10 @@ class LitDetectionModule(pl.LightningModule):
         # TODO: Why are we not using non-linearities here? (i.e. why are the ReLUs missing?)
         self.classifier = nn.Sequential(
             nn.Linear(23232, 100),
-            nn.ReLU(inplace=True),
+            # nn.ReLU(inplace=True),
             nn.Linear(100, 100),
-            nn.ReLU(inplace=True),
+            # nn.ReLU(inplace=True),
             nn.Linear(100, self.num_points),
-            nn.Sigmoid(),
         )
 
     def forward(self, x):
@@ -146,26 +144,13 @@ class LitDetectionModule(pl.LightningModule):
         y = torch.stack(tensors=y).T
 
         y_pred = self(x)
-        ios = []
-        for i, box in enumerate(y_pred):
-            a, b, c, d = box
-            boxA = [a, b, a + c, b + d]
-            ap, bp, cp, dp = y[i]
-            boxB = [ap, bp, ap + cp, bp + dp]
-            #print(bb_intersection_over_union(boxA, boxB).item())
-            ios.append(bb_intersection_over_union(boxA, boxB).item())
-
-        # TODO: I can't find this in the paper
+        #TODO: I can't find this in the paper
         loss1 = 0.8 * nn.L1Loss()(y_pred[:, :2], y[:, :2])
         loss2 = 0.2 * nn.L1Loss()(y_pred[:, 2:], y[:, 2:])
         loss = loss1 + loss2
 
-        #general loss:
-        #loss = nn.L1Loss()(y_pred, y)
         # TODO: implement Intersection over Union (IoU) metric logging
-        #  (cf. https://torchmetrics.readthedocs.io/en/stable/detection/mean_average_precision.html)
         self.log("pretrain_loss", loss)
-        self.log("Intersection over Union", np.mean(ios))
         return loss
 
     def configure_optimizers(self):
@@ -177,27 +162,3 @@ class LitDetectionModule(pl.LightningModule):
         optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9)
         lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
         return [optimizer], [lr_scheduler]
-
-
-def bb_intersection_over_union(boxA, boxB):
-    # determine the (x, y)-coordinates of the intersection rectangle
-    xA = max(boxA[0], boxB[0])
-    yA = max(boxA[1], boxB[1])
-    xB = min(boxA[2], boxB[2])
-    yB = min(boxA[3], boxB[3])
-
-    # compute the area of intersection rectangle
-    interArea = (xB - xA) * (yB - yA)
-
-    # compute the area of both the prediction and ground-truth
-    # rectangles
-    boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1])
-    boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
-
-    # compute the intersection over union by taking the intersection
-    # area and dividing it by the sum of prediction + ground-truth
-    # areas - the interesection area
-    iou = interArea / float(boxAArea + boxBArea - interArea)
-
-    # return the intersection over union value
-    return iou

@@ -19,8 +19,9 @@ PROVINCES, ALPHABET, ALPHABET_NUMBERS = provinces_and_alphabet_dict.values()
 
 # check if the wandb_key_file file exists in utils, if not raise a FileNotFoundError
 if not os.path.isfile(f"{os.getenv('LOG_DIR')}../utils/wandb_key_file"):
+    print(f"{os.getenv('LOG_DIR')}../utils/wandb_key_file")
     raise FileNotFoundError(
-        "wandb_api_key file not found; please create it in src/utils/ and place your wandb api key in it"
+        "wandb_key_file file not found; please create it in src/utils/ and place your wandb api key in it"
     )
 
 # reading the wandb API key stored in utils/wandb_key_file into the environment variable WANDB_API_KEY

@@ -10,7 +10,6 @@ from utils.datasets import PretrainDataset
 from modules.lit_detection import LitDetectionModule
 
 if __name__ == "__main__":
-
     # defining callbacks
     # 1. checkpoint callback
     checkpoint_callback = ModelCheckpoint(
@@ -36,7 +35,7 @@ if __name__ == "__main__":
         logger=WandbLogger(
             entity="mtp-ai-board-game-engine",
             project="cv-project",
-            group="pretraining",
+            group="pretraining_with_activations_MSE",
             log_model=True,
         ),
         auto_scale_batch_size=True,
