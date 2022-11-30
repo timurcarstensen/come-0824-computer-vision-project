@@ -12,11 +12,11 @@ import numpy as np
 
 class PretrainDataset(Dataset):
     def __init__(
-        self,
-        split_file: List[str] | str = ["train.txt"],
-        img_size: Tuple[int, int] = (480, 480),
-        is_transform: bool = None,
-        test_mode: bool = False,
+            self,
+            split_file: List[str] | str = ["train.txt"],
+            img_size: Tuple[int, int] = (480, 480),
+            is_transform: bool = None,
+            test_mode: bool = False,
     ):
         """
         Initialises the Pretraining dataset
@@ -78,11 +78,11 @@ class PretrainDataset(Dataset):
 
 class TrainDataset(Dataset):
     def __init__(
-        self,
-        split_file: List[str] | str = ["train.txt"],
-        img_size: Tuple = (480, 480),
-        is_transform: bool = None,
-        test_mode: bool = False,
+            self,
+            split_file: List[str] | str = ["train.txt"],
+            img_size: Tuple = (480, 480),
+            is_transform: bool = None,
+            test_mode: bool = False,
     ):
         """
         Initialises the Train Dataset
@@ -93,7 +93,6 @@ class TrainDataset(Dataset):
         """
 
         dataset_dir = "test_images" if test_mode else "CCPD2019"
-
         self.img_dir = [
             os.getenv("DATA_DIR") + f"{dataset_dir}/splits/" + elem for elem in split_file
         ]
@@ -135,11 +134,11 @@ class TrainDataset(Dataset):
 
 class TestDataset(Dataset):
     def __init__(
-        self,
-        split_file: List[str] | str = ["test.txt"],
-        img_size: Tuple[int, int] = (480, 480),
-        is_transform: bool = None,
-        test_mode: bool = False,
+            self,
+            split_file: List[str] | str = ["test.txt"],
+            img_size: Tuple[int, int] = (480, 480),
+            is_transform: bool = None,
+            test_mode: bool = False,
     ):
         """
         Initialises the Test Dataset

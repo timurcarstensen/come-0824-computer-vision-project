@@ -152,7 +152,7 @@ class LitDetectionModule(pl.LightningModule):
             boxA = [a, b, a + c, b + d]
             ap, bp, cp, dp = y[i]
             boxB = [ap, bp, ap + cp, bp + dp]
-            #print(bb_intersection_over_union(boxA, boxB).item())
+            # print(bb_intersection_over_union(boxA, boxB).item())
             ios.append(bb_intersection_over_union(boxA, boxB).item())
 
         # TODO: I can't find this in the paper
@@ -160,8 +160,8 @@ class LitDetectionModule(pl.LightningModule):
         loss2 = 0.2 * nn.L1Loss()(y_pred[:, 2:], y[:, 2:])
         loss = loss1 + loss2
 
-        #general loss:
-        #loss = nn.L1Loss()(y_pred, y)
+        # general loss:
+        # loss = nn.L1Loss()(y_pred, y)
         # TODO: implement Intersection over Union (IoU) metric logging
         #  (cf. https://torchmetrics.readthedocs.io/en/stable/detection/mean_average_precision.html)
         self.log("pretrain_loss", loss)
@@ -174,9 +174,13 @@ class LitDetectionModule(pl.LightningModule):
         :return:
         """
         # TODO: check that the parameters here are the same as used in the original paper!
-        optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
-        return [optimizer], [lr_scheduler]
+        # optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9)
+        # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
+        # return [optimizer], [lr_scheduler]
+
+        # TODO: try adam
+        optimizer = torch.optim.Adam(self.parameters(), lr=0.001)
+        return optimizer
 
 
 def bb_intersection_over_union(boxA, boxB):
