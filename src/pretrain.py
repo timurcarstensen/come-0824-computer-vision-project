@@ -1,6 +1,5 @@
 # third party imports
 import pytorch_lightning as pl
-import torch
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 
@@ -8,7 +7,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 # noinspection PyUnresolvedReferences
 import utils.utils
 from utils.datasets import PretrainDataset
-from modules.lit_detection import LitDetectionModule
+from src.modules.pl_original_models.lit_detection import LitDetectionModule
 
 if __name__ == "__main__":
     # defining callbacks
@@ -36,7 +35,7 @@ if __name__ == "__main__":
     #    print("Model not found")
 
     # TODO: uncomment this to use pretrained network
-    '''
+    """
     # get state dict of detection model
     state_dict = detection_model.state_dict()
     print(state_dict.keys())
@@ -74,7 +73,7 @@ if __name__ == "__main__":
             print(key)
 
     detection_model.load_state_dict(model_weights)
-    '''
+    """
     trainer = pl.Trainer(
         fast_dev_run=False,
         max_epochs=300,
