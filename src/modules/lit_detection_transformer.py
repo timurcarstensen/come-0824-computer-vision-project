@@ -145,7 +145,7 @@ class LitDetectionTransformerModule(pl.LightningModule):
         y = torch.stack(tensors=y).T
 
         y_pred = self(x)
-        #TODO: I can't find this in the paper
+        # TODO: I can't find this in the paper
         loss1 = 0.8 * nn.L1Loss()(y_pred[:, :2], y[:, :2])
         loss2 = 0.2 * nn.L1Loss()(y_pred[:, 2:], y[:, 2:])
         loss = loss1 + loss2
