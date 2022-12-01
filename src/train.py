@@ -9,7 +9,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 # local imports (i.e. our own code)
 # noinspection PyUnresolvedReferences
 import utils.utils
-from modules.lit_recognition import LitRecognitionModule
+from src.modules.pl_original_models.lit_recognition import LitRecognitionModule
 from utils.datasets import TrainDataset, TestDataset
 
 
