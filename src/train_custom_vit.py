@@ -44,8 +44,8 @@ if __name__ == "__main__":
         ),  # path to the logs folder, no need to modify
         strategy="ddp_find_unused_parameters_false",  # no need to modify
         log_every_n_steps=1,  # logging interval, no need to modify
-        limit_val_batches=0.05,  # validation set size, decrease for increased performance (% of the validation set)
-        limit_train_batches=0.05,  # analogous to limit_val_batches, no need to modify
+        # limit_val_batches=0.05,  # validation set size, decrease for increased performance (% of the validation set)
+        # limit_train_batches=0.05,  # analogous to limit_val_batches, no need to modify
         logger=WandbLogger(  # initialise WandbLogger, modify the group based on your current experiment
             entity="mtp-ai-board-game-engine",
             project="cv-project",
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         auto_scale_batch_size=True,
         auto_lr_find=True,
         accelerator="gpu",  # modify this based on the machine you're running on
-        devices=[2, 5],  # device indices for the GPUs
+        devices=[2, 5, 6, 7],  # device indices for the GPUs
     )
 
     trainer.fit(model=model)
