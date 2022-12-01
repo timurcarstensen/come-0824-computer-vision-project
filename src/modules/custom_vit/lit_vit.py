@@ -181,16 +181,12 @@ class LitEnd2EndViT(pl.LightningModule):
         # noinspection DuplicatedCode
         loss = torch.tensor(data=[0.0], device=self.device)
 
-        test = [25, 38, 35, 35, 35, 35, 35]
         for j in range(7):
             char_gt = torch.tensor(
                 data=[elem[j] for elem in lp_char_cls],
                 dtype=torch.long,
                 device=self.device,
             )
-
-            if not (max([elem[j] for elem in lp_char_cls]) <= test[j]):
-                raise ValueError(f"Character class {j} must be less than {test[j]}.")
 
             loss += self.plate_character_criterion(char_prediction[j], char_gt)
 
