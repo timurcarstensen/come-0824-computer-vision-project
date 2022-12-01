@@ -12,7 +12,7 @@ import pytorch_lightning as pl
 
 # local imports (i.e. our own code)
 from .lit_detection import LitDetectionModule
-from .roi_pooling import roi_pooling_ims
+from ..roi_pooling import roi_pooling_ims
 
 
 class LitRecognitionModule(pl.LightningModule):
@@ -43,6 +43,9 @@ class LitRecognitionModule(pl.LightningModule):
         :param plate_character_criterion: loss function for the plate character classifier
         """
         super().__init__()
+
+        # TODO: log hyperparameters to Weights & Biases
+        self.save_hyperparameters()
 
         # 1. setting variables
 
