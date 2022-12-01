@@ -1,3 +1,5 @@
+# Original RecognitionModule (i.e. fh02)
+
 # standard library imports
 from typing import Optional
 import os
@@ -7,8 +9,8 @@ import torch.nn as nn
 import torch
 
 # local imports (i.e. our own code)
-from src.modules.detection import DetectionModule
-from src.modules.roi_pooling import roi_pooling_ims
+from .detection import DetectionModule
+from ..roi_pooling import roi_pooling_ims
 
 
 class RecognitionModule(nn.Module):

@@ -1,3 +1,5 @@
+# Original DetectionModule (i.e. wR2)
+
 # third party imports
 import torch.nn as nn
 
