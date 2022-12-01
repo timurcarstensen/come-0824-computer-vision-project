@@ -12,11 +12,11 @@ import numpy as np
 
 class PretrainDataset(Dataset):
     def __init__(
-            self,
-            split_file: List[str] | str = ["train.txt"],
-            img_size: Tuple[int, int] = (480, 480),
-            is_transform: bool = None,
-            test_mode: bool = False,
+        self,
+        split_file: List[str] | str = ["train.txt"],
+        img_size: Tuple[int, int] = (480, 480),
+        is_transform: bool = None,
+        test_mode: bool = False,
     ):
         """
         Initialises the Pretraining dataset
@@ -78,11 +78,11 @@ class PretrainDataset(Dataset):
 
 class TrainDataset(Dataset):
     def __init__(
-            self,
-            split_file: List[str] | str = ["train.txt"],
-            img_size: Tuple = (480, 480),
-            is_transform: bool = None,
-            test_mode: bool = False,
+        self,
+        split_file: List[str] | str = ["train.txt"],
+        img_size: Tuple = (480, 480),
+        is_transform: bool = None,
+        test_mode: bool = False,
     ):
         """
         Initialises the Train Dataset
@@ -111,10 +111,10 @@ class TrainDataset(Dataset):
     def __getitem__(self, index):
         img_name = self.img_paths[index]
         img = cv.imread(img_name)
-        resized_image = cv.resize(img, self.img_size)
-        resized_image = np.transpose(resized_image, (2, 0, 1))
-        resized_image = resized_image.astype("float32")
-        resized_image /= 255.0
+        image = cv.resize(img, self.img_size)
+        image = np.transpose(image, (2, 0, 1))
+        image = image.astype("float32")
+        image /= 255.0
         labels = img_name.split("/")[-1].rsplit(".", 1)[0].split("-")[-3]
 
         iname = img_name.rsplit("/", 1)[-1].rsplit(".", 1)[0].split("-")
@@ -122,23 +122,25 @@ class TrainDataset(Dataset):
             [int(eel) for eel in el.split("&")] for el in iname[2].split("_")
         ]
         ori_w, ori_h = [float(int(el)) for el in [img.shape[1], img.shape[0]]]
-        new_labels = [
+        lp_box = [
             (left_up[0] + right_down[0]) / (2 * ori_w),
             (left_up[1] + right_down[1]) / (2 * ori_h),
             (right_down[0] - left_up[0]) / ori_w,
             (right_down[1] - left_up[1]) / ori_h,
         ]
 
-        return resized_image, new_labels, labels, img_name
+        lp_char_cls = labels
+
+        return image, lp_box, lp_char_cls, img_name
 
 
 class TestDataset(Dataset):
     def __init__(
-            self,
-            split_file: List[str] | str = ["test.txt"],
-            img_size: Tuple[int, int] = (480, 480),
-            is_transform: bool = None,
-            test_mode: bool = False,
+        self,
+        split_file: List[str] | str = ["test.txt"],
+        img_size: Tuple[int, int] = (480, 480),
+        is_transform: bool = None,
+        test_mode: bool = False,
     ):
         """
         Initialises the Test Dataset
