@@ -12,7 +12,7 @@ import pytorch_lightning as pl
 from vit_pytorch import ViT
 
 # local imports (i.e. our own code)
-from .lit_detection import LitDetectionModule
+from src.modules.pl_original_models.lit_detection import LitDetectionModule
 from .roi_pooling import roi_pooling_ims
 
 
@@ -65,14 +65,72 @@ class LitRecognitionModule_Transformer(pl.LightningModule):
         self.batch_size = batch_size
 
         # Use ViT as classifier
-        self.classifier1 = ViT(image_size = 53248, patch_size = 32, num_classes = province_num, dim = 1024, depth = 6, heads = 8, mlp_dim = 2048, dropout = 0.1, emb_dropout = 0.1)
-        self.classifier2 = ViT(image_size = 53248, patch_size = 32, num_classes = alphabet_num, dim = 1024, depth = 6, heads = 8, mlp_dim = 2048, dropout = 0.1, emb_dropout = 0.1)
-        self.classifier3 = ViT(image_size = 53248, patch_size = 32, num_classes = alphabet_numbers_num, dim = 1024, depth = 6, heads = 8, mlp_dim = 2048, dropout = 0.1, emb_dropout = 0.1)
-        self.classifier4 = ViT(image_size = 53248, patch_size = 32, num_classes = alphabet_numbers_num, dim = 1024, depth = 6, heads = 8, mlp_dim = 2048, dropout = 0.1, emb_dropout = 0.1)
-        self.classifier5 = ViT(image_size = 53248, patch_size = 32, num_classes = alphabet_numbers_num, dim = 1024, depth = 6, heads = 8, mlp_dim = 2048, dropout = 0.1, emb_dropout = 0.1)
-        self.classifier6 = ViT(image_size = 53248, patch_size = 32, num_classes = alphabet_numbers_num, dim = 1024, depth = 6, heads = 8, mlp_dim = 2048, dropout = 0.1, emb_dropout = 0.1)
-
-
+        self.classifier1 = ViT(
+            image_size=53248,
+            patch_size=32,
+            num_classes=province_num,
+            dim=1024,
+            depth=6,
+            heads=8,
+            mlp_dim=2048,
+            dropout=0.1,
+            emb_dropout=0.1,
+        )
+        # self.classifier2 = ViT(
+        #     image_size=53248,
+        #     patch_size=32,
+        #     num_classes=alphabet_num,
+        #     dim=1024,
+        #     depth=6,
+        #     heads=8,
+        #     mlp_dim=2048,
+        #     dropout=0.1,
+        #     emb_dropout=0.1,
+        # )
+        # self.classifier3 = ViT(
+        #     image_size=53248,
+        #     patch_size=32,
+        #     num_classes=alphabet_numbers_num,
+        #     dim=1024,
+        #     depth=6,
+        #     heads=8,
+        #     mlp_dim=2048,
+        #     dropout=0.1,
+        #     emb_dropout=0.1,
+        # )
+        # self.classifier4 = ViT(
+        #     image_size=53248,
+        #     patch_size=32,
+        #     num_classes=alphabet_numbers_num,
+        #     dim=1024,
+        #     depth=6,
+        #     heads=8,
+        #     mlp_dim=2048,
+        #     dropout=0.1,
+        #     emb_dropout=0.1,
+        # )
+        # self.classifier5 = ViT(
+        #     image_size=53248,
+        #     patch_size=32,
+        #     num_classes=alphabet_numbers_num,
+        #     dim=1024,
+        #     depth=6,
+        #     heads=8,
+        #     mlp_dim=2048,
+        #     dropout=0.1,
+        #     emb_dropout=0.1,
+        # )
+        # self.classifier6 = ViT(
+        #     image_size=53248,
+        #     patch_size=32,
+        #     num_classes=alphabet_numbers_num,
+        #     dim=1024,
+        #     depth=6,
+        #     heads=8,
+        #     mlp_dim=2048,
+        #     dropout=0.1,
+        #     emb_dropout=0.1,
+        # )
 
     def forward(self, x):
         x0 = self.detection_module.features[0](x)
@@ -141,12 +199,12 @@ class LitRecognitionModule_Transformer(pl.LightningModule):
         _rois = rois.view(rois.size(0), -1)
 
         y0 = self.classifier1(_rois)
-        y1 = self.classifier2(_rois)
-        y2 = self.classifier3(_rois)
-        y3 = self.classifier4(_rois)
-        y4 = self.classifier5(_rois)
-        y5 = self.classifier6(_rois)
-        y6 = self.classifier7(_rois)
+        y1 = self.classifier1(_rois)
+        y2 = self.classifier1(_rois)
+        y3 = self.classifier1(_rois)
+        y4 = self.classifier1(_rois)
+        y5 = self.classifier1(_rois)
+        y6 = self.classifier1(_rois)
         return box_loc, [y0, y1, y2, y3, y4, y5, y6]
 
     def train_dataloader(self):
@@ -277,8 +335,8 @@ class LitRecognitionModule_Transformer(pl.LightningModule):
     def configure_optimizers(self):
         # TODO: are we actually using the correct optimizer? i.e. the one from the paper with the correct HPs?
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
-        #lr_scheduler = torch.optim.lr_scheduler.StepLR(
+        # lr_scheduler = torch.optim.lr_scheduler.StepLR(
         #    optimizer=optimizer, step_size=5, gamma=0.1
-        #)
-        #return [optimizer], [lr_scheduler]
+        # )
+        # return [optimizer], [lr_scheduler]
         return optimizer
