@@ -8,9 +8,9 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 
 # local imports (i.e. our own code)
 # noinspection PyUnresolvedReferences
-import utils.utils
+import utilities.setup_utils
 from modules.lit_recognition_transformer import LitRecognitionModule_Transformer
-from utils.datasets import TrainDataset, TestDataset
+from utilities.datasets import TrainDataset, TestDataset
 
 if __name__ == "__main__":
     # TODO: start using the same hyperparameters as the authors for comparability (i.e. optimizer, batch_size, etc.)

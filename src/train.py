@@ -8,9 +8,9 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 
 # local imports (i.e. our own code)
 # noinspection PyUnresolvedReferences
-import utils.utils
-from src.modules.pl_original_models.lit_recognition import LitRecognitionModule
-from utils.datasets import TrainDataset, TestDataset
+import utilities.setup_utils
+from modules.pl_original_models.lit_recognition import LitRecognitionModule
+from utilities.datasets import TrainDataset, TestDataset
 
 
 if __name__ == "__main__":
@@ -22,8 +22,8 @@ if __name__ == "__main__":
     model = LitRecognitionModule(
         train_set=TrainDataset(),
         val_set=TestDataset(["val.txt"]),
-        batch_size=128,  # 16 is the default, modify according to available GPU memory
-        pretrained_model_path="pretrained_model.ckpt",  # filename of the pretrained model (in src/logs),
+        batch_size=64,  # 16 is the default, modify according to available GPU memory
+        # pretrained_model_path="pretrained_model.ckpt",  # filename of the pretrained model (in src/logs),
         # make sure this file exists in the logs folder on the machine you're running on
     )
 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         auto_scale_batch_size=True,
         auto_lr_find=True,
         accelerator="gpu",  # modify this based on the machine you're running on
-        devices=[1, 2, 4, 5, 6, 7],  # device indices for the GPUs
+        devices=[0, 1, 2, 3, 4, 5, 6, 7],  # device indices for the GPUs
     )
 
     trainer.fit(model=model)

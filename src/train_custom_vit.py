@@ -8,16 +8,16 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 
 # local imports (i.e. our own code)
 # noinspection PyUnresolvedReferences
-import utils.utils
+import utilities.setup_utils
 from modules.custom_vit.lit_vit import LitEnd2EndViT
-from utils.datasets import TrainDataset, TestDataset
+from utilities.datasets import TrainDataset, TestDataset
 
 
 if __name__ == "__main__":
 
     model = LitEnd2EndViT(
         train_set=TrainDataset(),
-        batch_size=2,  # 16 is the default, modify according to available GPU memory
+        batch_size=32,  # 16 is the default, modify according to available GPU memory
     )
 
     # initialise ModelCheckpoint Callback, which saves the top 3 models based
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         auto_scale_batch_size=True,
         auto_lr_find=True,
         accelerator="gpu",  # modify this based on the machine you're running on
-        devices=[2, 5, 6, 7],  # device indices for the GPUs
+        devices=[0, 1, 2, 3, 4, 5, 6, 7],  # device indices for the GPUs
     )
 
     trainer.fit(model=model)
