@@ -1,8 +1,16 @@
-import pytorch_lightning as pl
+# 3rd party imports
+import numpy as np
+
 import torch
 import torch.nn as nn
-import numpy as np
 from torch.utils.data import DataLoader
+
+from torchvision.ops.boxes import box_iou, box_convert, generalized_box_iou
+
+import pytorch_lightning as pl
+
+# local imports (i.e. our own code)
+from ..utils import iou_and_gen_iou
 
 
 class LitDetectionModule(pl.LightningModule):
@@ -20,15 +28,15 @@ class LitDetectionModule(pl.LightningModule):
         :param num_dataloader_workers: number of workers to use for the dataloader
         :param num_points: number of points to use for the detection model (this should always be 4, i.e. [x,y,w,h])]
         """
+        super().__init__()
+
         self.pretrain_set = pretrain_set
         self.batch_size = batch_size
         self.num_dataloader_workers = num_dataloader_workers
         self.num_points = num_points
 
-        # TODO: log hyperparameters to Weights & Biases
+        # TODO: log hyper-parameters to Weights & Biases
         self.save_hyperparameters()
-
-        super().__init__()
 
         hidden1 = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=48, kernel_size=5, padding=2, stride=2),
@@ -113,7 +121,6 @@ class LitDetectionModule(pl.LightningModule):
             hidden10,
         )
 
-        # TODO: Why are we not using non-linearities here? (i.e. why are the ReLUs missing?)
         self.classifier = nn.Sequential(
             nn.Linear(23232, 100),
             nn.ReLU(inplace=True),
@@ -136,6 +143,7 @@ class LitDetectionModule(pl.LightningModule):
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_dataloader_workers,
+            persistent_workers=True,
         )
 
     def training_step(self, batch, batch_idx):
@@ -149,26 +157,16 @@ class LitDetectionModule(pl.LightningModule):
         y = torch.stack(tensors=y).T
 
         y_pred = self(x)
-        ios = []
-        for i, box in enumerate(y_pred):
-            a, b, c, d = box
-            boxA = [a, b, a + c, b + d]
-            ap, bp, cp, dp = y[i]
-            boxB = [ap, bp, ap + cp, bp + dp]
-            # print(bb_intersection_over_union(boxA, boxB).item())
-            ios.append(bb_intersection_over_union(boxA, boxB).item())
 
         # TODO: I can't find this in the paper
         loss1 = 0.8 * nn.L1Loss()(y_pred[:, :2], y[:, :2])
         loss2 = 0.2 * nn.L1Loss()(y_pred[:, 2:], y[:, 2:])
         loss = loss1 + loss2
 
-        # general loss:
-        # loss = nn.L1Loss()(y_pred, y)
-        # TODO: implement Intersection over Union (IoU) metric logging
-        #  (cf. https://torchmetrics.readthedocs.io/en/stable/detection/mean_average_precision.html)
+        iou, gen_iou = iou_and_gen_iou(y=y, y_pred=y_pred)
+
+        self.log("IoU", {"train-IoU": iou, "train-gIoU": gen_iou})
         self.log("pretrain_loss", loss)
-        self.log("Intersection over Union", np.mean(ios))
         return loss
 
     def configure_optimizers(self):
@@ -184,27 +182,3 @@ class LitDetectionModule(pl.LightningModule):
         # TODO: try adam
         optimizer = torch.optim.Adam(self.parameters(), lr=0.001)
         return optimizer
-
-
-def bb_intersection_over_union(boxA, boxB):
-    # determine the (x, y)-coordinates of the intersection rectangle
-    xA = max(boxA[0], boxB[0])
-    yA = max(boxA[1], boxB[1])
-    xB = min(boxA[2], boxB[2])
-    yB = min(boxA[3], boxB[3])
-
-    # compute the area of intersection rectangle
-    interArea = (xB - xA) * (yB - yA)
-
-    # compute the area of both the prediction and ground-truth
-    # rectangles
-    boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1])
-    boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
-
-    # compute the intersection over union by taking the intersection
-    # area and dividing it by the sum of prediction + ground-truth
-    # areas - the interesection area
-    iou = interArea / float(boxAArea + boxBArea - interArea)
-
-    # return the intersection over union value
-    return iou
