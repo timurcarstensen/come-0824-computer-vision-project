@@ -1,11 +1,11 @@
 # Adaption of the roi_pooling module from the original implementation
 
 # standard library imports
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 
 # 3rd party imports
 import torch
-from torchvision.ops import roi_pool
+from torchvision.ops import roi_pool, box_iou, generalized_box_iou, box_convert
 
 
 def roi_pooling_ims(
@@ -14,7 +14,7 @@ def roi_pooling_ims(
     device: torch.device,
     size: Tuple[int, int] = (8, 16),
     spatial_scale: Optional[float] = 1.0,
-):
+) -> torch.Tensor:
     """
     Wrapper for torchvision.ops.roi_pool
     :param device: device to store the tensor on
@@ -32,7 +32,7 @@ def roi_pooling_ims(
         raise TypeError("t and rois should be torch.Tensor")
 
     # adapting rois to the format required by torchvision.ops.roi_pool (i.e. (batch_index, x1, y1, x2, y2))
-    rois = torch.stack(
+    rois: torch.Tensor = torch.stack(
         [
             torch.cat(
                 (
@@ -45,6 +45,39 @@ def roi_pooling_ims(
     )
 
     return roi_pool(input=t, boxes=rois, output_size=size, spatial_scale=spatial_scale)
+
+
+def iou_and_gen_iou(
+    y: torch.Tensor | List[torch.Tensor], y_pred: torch.Tensor | List[torch.Tensor]
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Calculates the intersection over union (IoU) and the generalized IoU (gIoU) for two bounding boxes.
+    :param y: ground truth of bounding box(es)
+    :param y_pred: predicted bounding box(es)
+    :return: IoU and gIoU
+    """
+
+    converted_gt = box_convert(y, in_fmt="cxcywh", out_fmt="xyxy")
+    converted_pred = box_convert(y_pred, in_fmt="cxcywh", out_fmt="xyxy")
+
+    converted_gt = [elem.view(1, -1) for elem in converted_gt]
+    converted_pred = [elem.view(1, -1) for elem in converted_pred]
+
+    iou = torch.stack(
+        [
+            box_iou(conv_pred_elem, conv_gt_elem)
+            for conv_pred_elem, conv_gt_elem in zip(converted_pred, converted_gt)
+        ]
+    )
+
+    gen_iou = torch.stack(
+        [
+            generalized_box_iou(conv_pred_elem, conv_gt_elem)
+            for conv_pred_elem, conv_gt_elem in zip(converted_pred, converted_gt)
+        ]
+    )
+
+    return torch.mean(iou), torch.mean(gen_iou)
 
 
 if __name__ == "__main__":
