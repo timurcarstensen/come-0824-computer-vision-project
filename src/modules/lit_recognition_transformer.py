@@ -13,7 +13,7 @@ from vit_pytorch import ViT
 
 # local imports (i.e. our own code)
 from src.modules.pl_original_models.lit_detection import LitDetectionModule
-from .roi_pooling import roi_pooling_ims
+from .utils import roi_pooling_ims
 
 
 class LitRecognitionModule_Transformer(pl.LightningModule):
