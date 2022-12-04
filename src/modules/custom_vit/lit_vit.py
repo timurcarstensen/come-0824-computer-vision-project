@@ -11,9 +11,7 @@ from einops.layers.torch import Rearrange
 from torchmetrics.classification.accuracy import MulticlassAccuracy
 
 # local imports (i.e. our own code)
-# noinspection PyUnresolvedReferences
-import src.utils.utils
-from .utils import Transformer, pair
+from .vit_utils import Transformer, pair
 
 
 class LitEnd2EndViT(pl.LightningModule):
@@ -26,7 +24,7 @@ class LitEnd2EndViT(pl.LightningModule):
         patch_size: Optional[int] = 32,
         dim: Optional[int] = 1024,
         depth: Optional[int] = 6,
-        heads: Optional[int] = 8,
+        heads: Optional[int] = 16,
         mlp_dim: Optional[int] = 2048,
         pool: Optional[str] = "cls",
         channels: Optional[int] = 3,
@@ -193,6 +191,7 @@ class LitEnd2EndViT(pl.LightningModule):
             acc = MulticlassAccuracy(num_classes=char_prediction[j].size()[1]).to(
                 self.device
             )
+
             self.log(f"classifier_{j}_accuracy", acc(char_prediction[j], char_gt))
 
         self.log("train_loss", loss)
