@@ -12,7 +12,7 @@ import pytorch_lightning as pl
 
 # local imports (i.e. our own code)
 from .lit_detection import LitDetectionModule
-from ..roi_pooling import roi_pooling_ims
+from ..utils import roi_pooling_ims, iou_and_gen_iou
 
 
 class LitRecognitionModule(pl.LightningModule):
@@ -221,6 +221,7 @@ class LitRecognitionModule(pl.LightningModule):
             device=self.device,
         ).T
 
+        # TODO: modify implementation of the TestDataset s.t. that the bounding boxes are returned too
         _, y_pred = self(x)
 
         # getting the argmax for each of the 7 digits for each element in the batch (also shape of (7, batch_size))
@@ -290,30 +291,34 @@ class LitRecognitionModule(pl.LightningModule):
         )
 
     def training_step(self, batch, batch_idx):
-        x, y, labels, ims = batch
+        x, box_gt, labels, ims = batch
 
         y_i = [[int(elem) for elem in label.split("_")[:7]] for label in labels]
 
-        y = torch.stack(tensors=y).T
+        box_gt = torch.stack(tensors=box_gt).T
 
         x = x.clone().detach()
 
-        fps_pred, y_pred = self(x)
+        box_pred, lp_char_pred = self(x)
 
         bounding_loss = torch.tensor(data=[0.0], device=self.device)
-        bounding_loss += 0.8 * nn.L1Loss()(fps_pred[:, :2], y[:, :2])
-        bounding_loss += 0.2 * nn.L1Loss()(fps_pred[:, 2:], y[:, 2:])
+        bounding_loss += 0.8 * nn.L1Loss()(box_pred[:, :2], box_gt[:, :2])
+        bounding_loss += 0.2 * nn.L1Loss()(box_pred[:, 2:], box_gt[:, 2:])
 
         character_loss = torch.tensor(data=[0.0], device=self.device)
         for j in range(7):
             l = torch.tensor(
                 data=[elem[j] for elem in y_i], dtype=torch.long, device=self.device
             )
-            character_loss += self.plate_character_criterion(y_pred[j], l)
+            character_loss += self.plate_character_criterion(lp_char_pred[j], l)
 
         loss = bounding_loss + character_loss
 
+        iou, gen_iou = iou_and_gen_iou(y=box_gt, y_pred=box_pred)
+
+        self.log("IoU", {"train-IoU": iou, "train-gIoU": gen_iou})
         self.log("train_loss", loss)
+
         self.log("bounding_loss", bounding_loss)
         self.log("character_loss", character_loss)
         return loss
