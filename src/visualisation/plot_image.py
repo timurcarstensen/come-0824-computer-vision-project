@@ -4,8 +4,8 @@
 import sys
 
 import cv2
-import src.utils.utils
-from src.utils.datasets import PretrainDataset
+import src.utilities.setup_utils
+from src.utilities.datasets import PretrainDataset
 
 provNum, alphaNum, adNum = 38, 25, 35
 provinces = [
@@ -113,7 +113,7 @@ ims = PretrainDataset(split_file=["train.txt"])
 imss, (cx, cy, w, h) = ims.__getitem__(0)
 # sys.exit()
 # img = cv2.imread(imss)
-cv2.imshow('image', imss)
+cv2.imshow("image", imss)
 sys.exit()
 left_up = [(cx - w / 2) * img.shape[1], (cy - h / 2) * img.shape[0]]
 right_down = [(cx + w / 2) * img.shape[1], (cy + h / 2) * img.shape[0]]
@@ -127,12 +127,12 @@ cv2.rectangle(
 #   The first character is Chinese character, can not be printed normally, thus is omitted.
 labelPred = [0, 0, 0, 0, 0, 0, 0]
 lpn = (
-        alphabets[labelPred[1]]
-        + ads[labelPred[2]]
-        + ads[labelPred[3]]
-        + ads[labelPred[4]]
-        + ads[labelPred[5]]
-        + ads[labelPred[6]]
+    alphabets[labelPred[1]]
+    + ads[labelPred[2]]
+    + ads[labelPred[3]]
+    + ads[labelPred[4]]
+    + ads[labelPred[5]]
+    + ads[labelPred[6]]
 )
 cv2.putText(
     img, lpn, (int(left_up[0]), int(left_up[1]) - 20), cv2.FONT_ITALIC, 2, (0, 0, 255)

@@ -5,9 +5,9 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 
 # local imports (i.e. our own code)
 # noinspection PyUnresolvedReferences
-import utils.utils
-from utils.datasets import PretrainDataset
-from src.modules.pl_original_models.lit_detection import LitDetectionModule
+import utilities.setup_utils
+from utilities.datasets import PretrainDataset
+from modules.pl_original_models.lit_detection import LitDetectionModule
 
 if __name__ == "__main__":
     # defining callbacks
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     )
     # 2. learning rate monitor callback
     lr_logger = LearningRateMonitor(logging_interval="step", log_momentum=True)
-    batch_size = 16
+    batch_size = 32
     # defining the model
     detection_model = LitDetectionModule(
         pretrain_set=PretrainDataset(split_file=["train.txt"]),
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     # some keys in the model_weights dictionary start with "module.wR2.module.", some start only with "module.". Remove these parts
     model_weights = {k.replace("module.wR2.module.", ""): v for k, v in model_weights.items()}
     model_weights = {k.replace("module.", ""): v for k, v in model_weights.items()}
-
+    
     # if there is a relu in our model, we have to rename some model_weight keys
     # rename keys 'classifier.1.weight', 'classifier.1.bias', 'classifier.2.weight', 'classifier.2.bias' to 'classifier.2.weight', 'classifier.2.bias', 'classifier.3.weight', 'classifier.3.bias'
     help_a = model_weights["classifier.2.weight"]
@@ -75,18 +75,22 @@ if __name__ == "__main__":
     detection_model.load_state_dict(model_weights)
     """
     trainer = pl.Trainer(
-        fast_dev_run=False,
+        # fast_dev_run=True,
         max_epochs=300,
         callbacks=[checkpoint_callback, lr_logger],
+        # limit_train_batches=0.05,
+        # limit_test_batches=0.05,
+        # limit_val_batches=0.05,
+        log_every_n_steps=1,
         logger=WandbLogger(
             entity="mtp-ai-board-game-engine",
             project="cv-project",
-            group=f"no_pretraining_relu_adam_batch={batch_size}",
+            group="pretraining-batch-size=32",
             log_model=True,
         ),
         auto_scale_batch_size=True,
         auto_lr_find=True,
         accelerator="gpu",
-        devices=[1, 2, 5, 6, 7],
+        devices=[0, 1, 2, 3, 4, 5, 6, 7],
     )
     trainer.fit(model=detection_model)
