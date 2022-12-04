@@ -10,7 +10,7 @@ import torch
 
 # local imports (i.e. our own code)
 from .detection import DetectionModule
-from ..roi_pooling import roi_pooling_ims
+from ..utils import roi_pooling_ims
 
 
 class RecognitionModule(nn.Module):
