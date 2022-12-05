@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
+
 # from vit_pytorch import ViT
 from torchvision.transforms.functional import crop
 from torchvision.transforms import Resize
@@ -16,24 +17,24 @@ from torchvision.ops import box_convert
 
 # local imports (i.e. our own code)
 from .pl_original_models.lit_detection import LitDetectionModule
-from .utils import roi_pooling_ims
+from .utils import roi_pooling_ims, iou_and_gen_iou
 from .custom_vit.lit_vit import LitEnd2EndViT
 
 
 class LitRecognitionModule_Transformer(pl.LightningModule):
     def __init__(
-            self,
-            train_set: torch.utils.data.Dataset,
-            val_set: torch.utils.data.Dataset,
-            num_dataloader_workers: Optional[int] = 4,
-            batch_size: Optional[int] = 2,
-            num_points: Optional[int] = 4,
-            pretrained_model_path: Optional[str] = None,
-            province_num: Optional[int] = 38,
-            alphabet_num: Optional[int] = 25,
-            alphabet_numbers_num: Optional[int] = 35,
-            plate_character_criterion=nn.CrossEntropyLoss(),  # TODO: WHY ARE WE USING CROSS ENTROPY LOSS HERE?
-            resize_size=(64, 128),
+        self,
+        train_set: torch.utils.data.Dataset,
+        val_set: torch.utils.data.Dataset,
+        num_dataloader_workers: Optional[int] = 4,
+        batch_size: Optional[int] = 2,
+        num_points: Optional[int] = 4,
+        pretrained_model_path: Optional[str] = None,
+        province_num: Optional[int] = 38,
+        alphabet_num: Optional[int] = 25,
+        alphabet_numbers_num: Optional[int] = 35,
+        plate_character_criterion=nn.CrossEntropyLoss(),  # TODO: WHY ARE WE USING CROSS ENTROPY LOSS HERE?
+        resize_size=(64, 128),
     ):
         """
         Initialize the recognition module
@@ -85,6 +86,7 @@ class LitRecognitionModule_Transformer(pl.LightningModule):
             dropout=0.1,
             emb_dropout=0.1,
         )
+
         self.resize = Resize(size=resize_size)
 
     def forward(self, x):
@@ -102,26 +104,25 @@ class LitRecognitionModule_Transformer(pl.LightningModule):
         x9 = x9.view(x9.size(0), -1)
         box_loc = self.detection_module.classifier(x9)
 
+        # TODO: maybe put this into its own layer?
         # crop x with box_loc
         _, _, w, h = x.size()
-        box_loc = box_convert(box_loc, in_fmt="cxcywh", out_fmt="xywh")  # * torch.tensor([w, w, h, h])
+        box_loc = box_convert(box_loc, in_fmt="cxcywh", out_fmt="xywh")
         box_loc = torch.round(box_loc * torch.tensor([w, h, w, h], device=self.device))
-        # x_u *= w
-        # y_u *= h
-        # w_ *= w
-        # h_ *= h
-        # print(box_loc)
-        # print(x.size())
-        # for every element in box_loc, crop and resized the element and create new tensor
-        # print(box_loc[0, 0].item())
         x_resized = torch.stack(
-            [self.resize(crop(x[i], int(box_loc[i, 0].item()), int(box_loc[i, 1].item()), int(box_loc[i, 2].item()),
-                              int(box_loc[i, 3].item()))) for i in range(x.size(0))])
-        # x_cropped = torch.tensor([crop(x, top=box[0], left=box[1], height=box[2],
-        #                               width=box[3])] for box in box_loc)
-        # print(x_resized)
-        # resize x_cropped to 64*128
-        # x_resized = torch.stack([self.resize(cropped) for cropped in x_cropped])
+            [
+                self.resize(
+                    crop(
+                        elem,
+                        int(box_loc[idx, 0].item()),
+                        int(box_loc[idx, 1].item()),
+                        int(box_loc[idx, 2].item()),
+                        int(box_loc[idx, 3].item()),
+                    )
+                )
+                for idx, elem in enumerate(x)
+            ]
+        )
 
         # feed x_resized through ViT
         lp_prediction = self.vit(x_resized)
@@ -233,11 +234,11 @@ class LitRecognitionModule_Transformer(pl.LightningModule):
 
         x = x.clone().detach()
 
-        fps_pred, y_pred = self(x)
+        box_pred, y_pred = self(x)
 
         bounding_loss = torch.tensor(data=[0.0], device=self.device)
-        bounding_loss += 0.8 * nn.L1Loss()(fps_pred[:, :2], y[:, :2])
-        bounding_loss += 0.2 * nn.L1Loss()(fps_pred[:, 2:], y[:, 2:])
+        bounding_loss += 0.8 * nn.L1Loss()(box_pred[:, :2], y[:, :2])
+        bounding_loss += 0.2 * nn.L1Loss()(box_pred[:, 2:], y[:, 2:])
 
         character_loss = torch.tensor(data=[0.0], device=self.device)
         for j in range(7):
@@ -247,6 +248,10 @@ class LitRecognitionModule_Transformer(pl.LightningModule):
             character_loss += self.plate_character_criterion(y_pred[j], l)
 
         loss = bounding_loss + character_loss
+
+        iou, gen_iou = iou_and_gen_iou(y=y, y_pred=box_pred)
+
+        self.log("IoU", {"train-IoU": iou, "train-gIoU": gen_iou})
 
         self.log("train_loss", loss)
         self.log("bounding_loss", bounding_loss)
