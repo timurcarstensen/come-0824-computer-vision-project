@@ -1,12 +1,7 @@
 # 3rd party imports
-import numpy as np
-
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-
-from torchvision.ops.boxes import box_iou, box_convert, generalized_box_iou
-
 import pytorch_lightning as pl
 
 # local imports (i.e. our own code)
