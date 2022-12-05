@@ -61,8 +61,8 @@ if __name__ == "__main__":
         ),
         auto_scale_batch_size=True,
         auto_lr_find=True,
-        accelerator="cpu",  # modify this based on the machine you're running on
-        #devices=[0]  # [0, 1, 2, 3, 4, 5, 6, 7],  # device indices for the GPUs
+        accelerator="gpu",  # modify this based on the machine you're running on
+        devices=[0, 1, 2, 3, 4, 5, 6, 7],  # device indices for the GPUs
     )
 
     trainer.fit(model=model)

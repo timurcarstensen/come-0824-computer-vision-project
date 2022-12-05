@@ -15,7 +15,7 @@ from torchvision.transforms import Resize
 from torchvision.ops import box_convert
 
 # local imports (i.e. our own code)
-from src.modules.pl_original_models.lit_detection import LitDetectionModule
+from .pl_original_models.lit_detection import LitDetectionModule
 from .utils import roi_pooling_ims
 from .custom_vit.lit_vit import LitEnd2EndViT
 
@@ -105,18 +105,23 @@ class LitRecognitionModule_Transformer(pl.LightningModule):
         # crop x with box_loc
         _, _, w, h = x.size()
         box_loc = box_convert(box_loc, in_fmt="cxcywh", out_fmt="xywh")  # * torch.tensor([w, w, h, h])
-        box_loc = box_loc.mm(torch.tensor([w, h, w, h], ).view(-1,1))
+        box_loc = torch.round(box_loc * torch.tensor([w, h, w, h], device=self.device))
         # x_u *= w
         # y_u *= h
         # w_ *= w
         # h_ *= h
-        print(box_loc)
-        print(x.size())
-        x_cropped = crop(x, top=box_loc[:, 0], left=box_loc[:, 1], height=box_loc[:, 2],
-                         width=box_loc[:, 3])
-
+        # print(box_loc)
+        # print(x.size())
+        # for every element in box_loc, crop and resized the element and create new tensor
+        # print(box_loc[0, 0].item())
+        x_resized = torch.stack(
+            [self.resize(crop(x[i], int(box_loc[i, 0].item()), int(box_loc[i, 1].item()), int(box_loc[i, 2].item()),
+                              int(box_loc[i, 3].item()))) for i in range(x.size(0))])
+        # x_cropped = torch.tensor([crop(x, top=box[0], left=box[1], height=box[2],
+        #                               width=box[3])] for box in box_loc)
+        # print(x_resized)
         # resize x_cropped to 64*128
-        x_resized = self.resize(x_cropped)
+        # x_resized = torch.stack([self.resize(cropped) for cropped in x_cropped])
 
         # feed x_resized through ViT
         lp_prediction = self.vit(x_resized)
