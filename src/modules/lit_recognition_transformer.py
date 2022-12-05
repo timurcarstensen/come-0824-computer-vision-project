@@ -103,9 +103,17 @@ class LitRecognitionModule_Transformer(pl.LightningModule):
         box_loc = self.detection_module.classifier(x9)
 
         # crop x with box_loc
-        box_loc = box_convert(box_loc, in_fmt="cxcywh", out_fmt="xywh")
+        _, _, w, h = x.size()
+        box_loc = box_convert(box_loc, in_fmt="cxcywh", out_fmt="xywh")  # * torch.tensor([w, w, h, h])
+        box_loc = box_loc.mm(torch.tensor([w, h, w, h], ).view(-1,1))
+        # x_u *= w
+        # y_u *= h
+        # w_ *= w
+        # h_ *= h
         print(box_loc)
-        x_cropped = crop(x, top=box_loc[:, 0], left=box_loc[:, 1], height=box_loc[:, 2], width=box_loc[:, 3])
+        print(x.size())
+        x_cropped = crop(x, top=box_loc[:, 0], left=box_loc[:, 1], height=box_loc[:, 2],
+                         width=box_loc[:, 3])
 
         # resize x_cropped to 64*128
         x_resized = self.resize(x_cropped)
