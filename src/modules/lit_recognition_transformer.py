@@ -9,26 +9,31 @@ import torch.nn as nn
 import torch
 from torch.utils.data import DataLoader
 import pytorch_lightning as pl
-from vit_pytorch import ViT
+# from vit_pytorch import ViT
+from torchvision.transforms.functional import crop
+from torchvision.transforms import Resize
+from torchvision.ops import box_convert
 
 # local imports (i.e. our own code)
 from src.modules.pl_original_models.lit_detection import LitDetectionModule
 from .utils import roi_pooling_ims
+from .custom_vit.lit_vit import LitEnd2EndViT
 
 
 class LitRecognitionModule_Transformer(pl.LightningModule):
     def __init__(
-        self,
-        train_set: torch.utils.data.Dataset,
-        val_set: torch.utils.data.Dataset,
-        num_dataloader_workers: Optional[int] = 4,
-        batch_size: Optional[int] = 2,
-        num_points: Optional[int] = 4,
-        pretrained_model_path: Optional[str] = None,
-        province_num: Optional[int] = 38,
-        alphabet_num: Optional[int] = 25,
-        alphabet_numbers_num: Optional[int] = 35,
-        plate_character_criterion=nn.CrossEntropyLoss(),  # TODO: WHY ARE WE USING CROSS ENTROPY LOSS HERE?
+            self,
+            train_set: torch.utils.data.Dataset,
+            val_set: torch.utils.data.Dataset,
+            num_dataloader_workers: Optional[int] = 4,
+            batch_size: Optional[int] = 2,
+            num_points: Optional[int] = 4,
+            pretrained_model_path: Optional[str] = None,
+            province_num: Optional[int] = 38,
+            alphabet_num: Optional[int] = 25,
+            alphabet_numbers_num: Optional[int] = 35,
+            plate_character_criterion=nn.CrossEntropyLoss(),  # TODO: WHY ARE WE USING CROSS ENTROPY LOSS HERE?
+            resize_size=(64, 128),
     ):
         """
         Initialize the recognition module
@@ -42,6 +47,7 @@ class LitRecognitionModule_Transformer(pl.LightningModule):
         :param alphabet_num: number of characters in the alphabet
         :param alphabet_numbers_num: number of characters in the alphabet and numbers
         :param plate_character_criterion: loss function for the plate character classifier
+        :param resize_size: size to which the images should be resized
         """
         super().__init__()
 
@@ -65,72 +71,21 @@ class LitRecognitionModule_Transformer(pl.LightningModule):
         self.batch_size = batch_size
 
         # Use ViT as classifier
-        self.classifier1 = ViT(
-            image_size=53248,
+
+        self.vit = LitEnd2EndViT(
+            train_set=None,
+            image_size=resize_size[0] * resize_size[1],
             patch_size=32,
-            num_classes=province_num,
             dim=1024,
             depth=6,
-            heads=8,
+            heads=16,
             mlp_dim=2048,
+            channels=3,
+            dim_head=64,
             dropout=0.1,
             emb_dropout=0.1,
         )
-        # self.classifier2 = ViT(
-        #     image_size=53248,
-        #     patch_size=32,
-        #     num_classes=alphabet_num,
-        #     dim=1024,
-        #     depth=6,
-        #     heads=8,
-        #     mlp_dim=2048,
-        #     dropout=0.1,
-        #     emb_dropout=0.1,
-        # )
-        # self.classifier3 = ViT(
-        #     image_size=53248,
-        #     patch_size=32,
-        #     num_classes=alphabet_numbers_num,
-        #     dim=1024,
-        #     depth=6,
-        #     heads=8,
-        #     mlp_dim=2048,
-        #     dropout=0.1,
-        #     emb_dropout=0.1,
-        # )
-        # self.classifier4 = ViT(
-        #     image_size=53248,
-        #     patch_size=32,
-        #     num_classes=alphabet_numbers_num,
-        #     dim=1024,
-        #     depth=6,
-        #     heads=8,
-        #     mlp_dim=2048,
-        #     dropout=0.1,
-        #     emb_dropout=0.1,
-        # )
-        # self.classifier5 = ViT(
-        #     image_size=53248,
-        #     patch_size=32,
-        #     num_classes=alphabet_numbers_num,
-        #     dim=1024,
-        #     depth=6,
-        #     heads=8,
-        #     mlp_dim=2048,
-        #     dropout=0.1,
-        #     emb_dropout=0.1,
-        # )
-        # self.classifier6 = ViT(
-        #     image_size=53248,
-        #     patch_size=32,
-        #     num_classes=alphabet_numbers_num,
-        #     dim=1024,
-        #     depth=6,
-        #     heads=8,
-        #     mlp_dim=2048,
-        #     dropout=0.1,
-        #     emb_dropout=0.1,
-        # )
+        self.resize = Resize(size=resize_size)
 
     def forward(self, x):
         x0 = self.detection_module.features[0](x)
@@ -147,65 +102,18 @@ class LitRecognitionModule_Transformer(pl.LightningModule):
         x9 = x9.view(x9.size(0), -1)
         box_loc = self.detection_module.classifier(x9)
 
-        h1, w1 = _x1.data.size()[2], _x1.data.size()[3]
-        p1 = torch.tensor(
-            data=[[w1, 0, 0, 0], [0, h1, 0, 0], [0, 0, w1, 0], [0, 0, 0, h1]],
-            requires_grad=False,
-            dtype=torch.float32,
-            device=self.device,
-        )
+        # crop x with box_loc
+        box_loc = box_convert(box_loc, in_fmt="cxcywh", out_fmt="xywh")
+        print(box_loc)
+        x_cropped = crop(x, top=box_loc[:, 0], left=box_loc[:, 1], height=box_loc[:, 2], width=box_loc[:, 3])
 
-        h2, w2 = _x3.data.size()[2], _x3.data.size()[3]
+        # resize x_cropped to 64*128
+        x_resized = self.resize(x_cropped)
 
-        p2 = torch.tensor(
-            data=[[w2, 0, 0, 0], [0, h2, 0, 0], [0, 0, w2, 0], [0, 0, 0, h2]],
-            requires_grad=False,
-            dtype=torch.float32,
-            device=self.device,
-        )
+        # feed x_resized through ViT
+        lp_prediction = self.vit(x_resized)
 
-        h3, w3 = _x5.data.size()[2], _x5.data.size()[3]
-        p3 = torch.tensor(
-            data=[[w3, 0, 0, 0], [0, h3, 0, 0], [0, 0, w3, 0], [0, 0, 0, h3]],
-            requires_grad=False,
-            dtype=torch.float32,
-            device=self.device,
-        )
-
-        # x, y, w, h --> x1, y1, x2, y2
-        if not box_loc.data.size()[1] == 4:
-            raise ValueError("box_loc.data.size()[1] != 4")
-
-        postfix = torch.tensor(
-            data=[[1, 0, 1, 0], [0, 1, 0, 1], [-0.5, 0, 0.5, 0], [0, -0.5, 0, 0.5]],
-            requires_grad=False,
-            dtype=torch.float32,
-            device=self.device,
-        )
-
-        box_new = box_loc.mm(postfix).clamp(min=0, max=1)
-
-        roi1 = roi_pooling_ims(
-            t=_x1, rois=box_new.mm(p1), size=(8, 16), device=self.device
-        )
-        roi2 = roi_pooling_ims(
-            t=_x3, rois=box_new.mm(p2), size=(8, 16), device=self.device
-        )
-        roi3 = roi_pooling_ims(
-            t=_x5, rois=box_new.mm(p3), size=(8, 16), device=self.device
-        )
-        rois = torch.cat((roi1, roi2, roi3), 1)
-
-        _rois = rois.view(rois.size(0), -1)
-
-        y0 = self.classifier1(_rois)
-        y1 = self.classifier1(_rois)
-        y2 = self.classifier1(_rois)
-        y3 = self.classifier1(_rois)
-        y4 = self.classifier1(_rois)
-        y5 = self.classifier1(_rois)
-        y6 = self.classifier1(_rois)
-        return box_loc, [y0, y1, y2, y3, y4, y5, y6]
+        return box_loc, lp_prediction
 
     def train_dataloader(self):
         return DataLoader(

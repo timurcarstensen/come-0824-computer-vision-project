@@ -125,3 +125,9 @@ class ViT(nn.Module):
 
         x = self.to_latent(x)
         return self.mlp_head(x)
+
+# resizes (5,5) torch tensor a to (20,20) torch tensor b by filling up with zeros
+def resize(a):
+    b = torch.zeros(20,20)
+    b[0:5,0:5] = a
+    return b
