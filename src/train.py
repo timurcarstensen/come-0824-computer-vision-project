@@ -58,7 +58,7 @@ if __name__ == "__main__":
             project="cv-project",
             group="training",
             save_dir=os.getenv("LOG_DIR"),
-            log_model=True,
+            log_model="all",
         ),
         auto_scale_batch_size=True,
         auto_lr_find=True,
