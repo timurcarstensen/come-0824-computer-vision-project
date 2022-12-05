@@ -86,7 +86,7 @@ if __name__ == "__main__":
             entity="mtp-ai-board-game-engine",
             project="cv-project",
             group="pretraining-batch-size=32",
-            log_model=True,
+            log_model="all",
         ),
         auto_scale_batch_size=True,
         auto_lr_find=True,
