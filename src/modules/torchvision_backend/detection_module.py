@@ -13,14 +13,13 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 # local imports (i.e. our own code)
 from src.utilities.datasets import TrainDataset, PretrainDataset
 from src.utilities import setup_utils
-from utils import iou_and_gen_iou
+from src.modules.utils import iou_and_gen_iou
 
 
 class DetectionModule(pl.LightningModule):
-    def __init__(self, num_points=4, batch_size=4):
+    def __init__(self, batch_size=4):
         super(DetectionModule, self).__init__()
 
-        self.num_points = num_points
         self.batch_size = batch_size
 
         self.backbone = resnet50(weights="ResNet50_Weights.DEFAULT")
@@ -30,7 +29,7 @@ class DetectionModule(pl.LightningModule):
             nn.ReLU(inplace=True),
             nn.Linear(100, 100),
             nn.ReLU(inplace=True),
-            nn.Linear(100, self.num_points),
+            nn.Linear(100, 4),
             nn.Sigmoid(),
         )
 
@@ -88,36 +87,38 @@ class DetectionModule(pl.LightningModule):
 
 
 if __name__ == "__main__":
-    checkpoint_callback = ModelCheckpoint(
-        monitor="pretrain_loss",
-        filename="detection-{epoch:02d}-{pretrain_loss:.2f}",
-        save_top_k=3,
-        mode="min",
-    )
+    # checkpoint_callback = ModelCheckpoint(
+    #     monitor="pretrain_loss",
+    #     filename="detection-{epoch:02d}-{pretrain_loss:.2f}",
+    #     save_top_k=3,
+    #     mode="min",
+    # )
     # 2. learning rate monitor callback
-    lr_logger = LearningRateMonitor(logging_interval="step", log_momentum=True)
+    # lr_logger = LearningRateMonitor(logging_interval="step", log_momentum=True)
 
     # defining the model
     detection_model = DetectionModule(batch_size=16)
 
-    trainer = pl.Trainer(
-        # fast_dev_run=True,
-        max_epochs=100,
-        callbacks=[checkpoint_callback, lr_logger],
-        # limit_train_batches=0.05,
-        # limit_test_batches=0.05,
-        # limit_val_batches=0.05,
-        log_every_n_steps=1,
-        logger=WandbLogger(
-            entity="mtp-ai-board-game-engine",
-            project="cv-project",
-            group="pretraining-resnet-backbone",
-            log_model="all",
-        ),
-        # auto_scale_batch_size=True,
-        # auto_lr_find=True,
-        accelerator="gpu",
-        devices=[0, 1],
-    )
+    print(detection_model)
 
-    trainer.fit(model=detection_model)
+    # trainer = pl.Trainer(
+    #     # fast_dev_run=True,
+    #     max_epochs=100,
+    #     callbacks=[checkpoint_callback, lr_logger],
+    #     # limit_train_batches=0.05,
+    #     # limit_test_batches=0.05,
+    #     # limit_val_batches=0.05,
+    #     log_every_n_steps=1,
+    #     logger=WandbLogger(
+    #         entity="mtp-ai-board-game-engine",
+    #         project="cv-project",
+    #         group="pretraining-resnet-backbone",
+    #         log_model="all",
+    #     ),
+    #     # auto_scale_batch_size=True,
+    #     # auto_lr_find=True,
+    #     accelerator="gpu",
+    #     devices=[0, 1],
+    # )
+    #
+    # trainer.fit(model=detection_model)
