@@ -17,17 +17,19 @@ from ..utils import roi_pooling_ims, iou_and_gen_iou
 
 class LitRecognitionModule(pl.LightningModule):
     def __init__(
-        self,
-        train_set: torch.utils.data.Dataset,
-        val_set: torch.utils.data.Dataset,
-        num_dataloader_workers: Optional[int] = 4,
-        batch_size: Optional[int] = 2,
-        num_points: Optional[int] = 4,
-        pretrained_model_path: Optional[str] = None,
-        province_num: Optional[int] = 38,
-        alphabet_num: Optional[int] = 25,
-        alphabet_numbers_num: Optional[int] = 35,
-        plate_character_criterion=nn.CrossEntropyLoss(),  # TODO: WHY ARE WE USING CROSS ENTROPY LOSS HERE?
+            self,
+            train_set: torch.utils.data.Dataset,
+            val_set: torch.utils.data.Dataset,
+            num_dataloader_workers: Optional[int] = 4,
+            batch_size: Optional[int] = 2,
+            num_points: Optional[int] = 4,
+            pretrained_model_path: Optional[str] = None,
+            province_num: Optional[int] = 38,
+            alphabet_num: Optional[int] = 25,
+            alphabet_numbers_num: Optional[int] = 35,
+            plate_character_criterion=nn.CrossEntropyLoss(),  # TODO: WHY ARE WE USING CROSS ENTROPY LOSS HERE?
+            limit_train_batches: Optional[float] = 1.0,
+            limit_val_batches: Optional[float] = 1.0,
     ):
         """
         Initialize the recognition module
@@ -65,6 +67,11 @@ class LitRecognitionModule(pl.LightningModule):
         self.val_set = val_set
         self.num_dataloader_workers = num_dataloader_workers
         self.batch_size = batch_size
+        self.limit_train_batches = limit_train_batches
+        self.limit_val_batches = limit_val_batches
+
+        # sample 80% from self.train_set
+        # TODO: DO THIS SAMPLING the train set has the parameter "self.img_paths" which we want to sample from
 
         # TODO: why are we using LINEAR classifiers??
         # 2. defining the model
@@ -325,8 +332,12 @@ class LitRecognitionModule(pl.LightningModule):
 
     def configure_optimizers(self):
         # TODO: are we actually using the correct optimizer? i.e. the one from the paper with the correct HPs?
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer=optimizer, step_size=5, gamma=0.1
-        )
+        optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
         return [optimizer], [lr_scheduler]
+
+        # optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        # lr_scheduler = torch.optim.lr_scheduler.StepLR(
+        #    optimizer=optimizer, step_size=5, gamma=0.1
+        # )
+        # return [optimizer], [lr_scheduler]
