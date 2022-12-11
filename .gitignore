@@ -7,3 +7,4 @@ CCPD2019.tar.xz
 /resources/data/CCPD2019/
 .vscode
 wandb_key_file
+wandb
