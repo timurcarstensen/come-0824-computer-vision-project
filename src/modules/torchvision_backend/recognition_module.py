@@ -12,8 +12,7 @@ from pytorch_lightning.loggers.wandb import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 
 # local imports (i.e. our own code)
-from src.utilities.datasets import TrainDataset, PretrainDataset
-from src.utilities import setup_utils
+from src.utilities.datasets import TrainDataset
 from src.modules.utils import iou_and_gen_iou
 from src.modules.torchvision_backend.detection_module import DetectionModule
 from src.modules.torchvision_backend.crop_module import CropModule
@@ -23,6 +22,7 @@ class RecognitionModule(pl.LightningModule):
     def __init__(
         self,
         pretrained_model_path: Optional[str] = None,
+        fine_tuning: Optional[bool] = False,
         batch_size: Optional[int] = 4,
         crop_size: Tuple[int, int] = (224, 224),
         province_num: Optional[int] = 38,
@@ -30,21 +30,39 @@ class RecognitionModule(pl.LightningModule):
         alphabet_numbers_num: Optional[int] = 35,
         plate_character_criterion: Optional[nn.Module] = nn.CrossEntropyLoss(),
     ):
+        """
+        Initialises a RecognitionModule
+        :param pretrained_model_path: path to pretrained weights for DetectionModule
+        :param fine_tuning: whether to activate gradient updates for the DetectionModule
+        :param batch_size: batch_size
+        :param crop_size: tuple, size of the cropped images passed to the classifiers
+        :param plate_character_criterion: loss criterion for the LP recognition
+        :param province_num: int, num classes (ignore)
+        :param alphabet_num: int, num classes (ignore)
+        :param alphabet_numbers_num: int, num classes (ignore)
+        """
 
         super(RecognitionModule, self).__init__()
 
         self.batch_size = batch_size
         self.plate_character_criterion = plate_character_criterion
 
-        # load detection module
+        # initialise detection module
         self.detection_module = DetectionModule()
 
+        # load pretrained weights if provided
         if pretrained_model_path:
             print("Loading pretrained model from: ", pretrained_model_path)
             self.detection_module.load_from_checkpoint(
                 checkpoint_path=f"{os.getenv('LOG_DIR')}{pretrained_model_path}",
             )
 
+        # if not fine_tuning, disable gradient updates for the detection module
+        if not fine_tuning:
+            for param in self.detection_module.parameters():
+                param.requires_grad = False
+
+        # initialise crop module
         self.crop = CropModule(size=crop_size)
 
         self.classifier1 = nn.Sequential(
@@ -126,7 +144,8 @@ class RecognitionModule(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, box_gt, labels, ims = batch
-        y_i = [[int(elem) for elem in label.split("_")[:7]] for label in labels]
+
+        labels = [[int(elem) for elem in label.split("_")[:7]] for label in labels]
 
         box_gt = torch.stack(tensors=box_gt).T
 
@@ -141,7 +160,7 @@ class RecognitionModule(pl.LightningModule):
         character_loss = torch.tensor(data=[0.0], device=self.device)
         for j in range(7):
             l = torch.tensor(
-                data=[elem[j] for elem in y_i], dtype=torch.long, device=self.device
+                data=[elem[j] for elem in labels], dtype=torch.long, device=self.device
             )
             character_loss += self.plate_character_criterion(lp_char_pred[j], l)
 
