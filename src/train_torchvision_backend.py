@@ -21,9 +21,9 @@ if __name__ == "__main__":
 
     # defining the model
     recognition_module = RecognitionModule(
-        batch_size=16,
+        batch_size=32,
         pretrained_model_path="resnet_backend.ckpt",
-        crop_size=(112, 112),
+        crop_size=(128, 128),
         fine_tuning=True,
     )
 
@@ -33,16 +33,17 @@ if __name__ == "__main__":
         # fast_dev_run=True,
         max_epochs=100,
         precision=16,
+        num_sanity_val_steps=0,
         callbacks=[checkpoint_callback, lr_logger],
-        # limit_train_batches=0.05,
+        # limit_train_batches=0.001,
         # limit_test_batches=0.05,
-        # limit_val_batches=0.05,
+        # limit_val_batches=0.001,
         log_every_n_steps=1,
         logger=WandbLogger(
             entity="mtp-ai-board-game-engine",
             project="cv-project",
             name="fine-tuning-crop-size-112",
-            group="training-resnet-backbone",
+            group="training-resnet-backbone-conv-transformer",
             log_model="all",
         ),
         # auto_scale_batch_size=True,
