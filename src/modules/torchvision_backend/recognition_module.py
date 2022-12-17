@@ -169,7 +169,7 @@ class RecognitionModule(pl.LightningModule):
                 convolved = torch.cat(
                     (
                         convolved.view(self.batch_size, -1),
-                        torch.zeros(difference, device=self.device),
+                        torch.zeros((self.batch_size, difference), device=self.device),
                     ),
                     dim=1,
                 )
