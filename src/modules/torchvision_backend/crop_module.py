@@ -40,6 +40,20 @@ class CropModule(pl.LightningModule):
             )
 
             tmp_img = img[idx][:, elem[1] : elem[3], elem[0] : elem[2]]
+
+            # find out in which dimension the image is of dim 0
+            if tmp_img.shape[1] == 0:
+                # if the image is of dim 0 in the H dimension, we need to pad the W dimension
+                tmp_img = torch.nn.functional.pad(
+                    tmp_img, (0, 2, 0), mode="constant", value=0
+                )
+
+            if tmp_img.shape[2] == 0:
+                # if the image is of dim 0 in the W dimension, we need to pad the H dimension
+                tmp_img = torch.nn.functional.pad(
+                    tmp_img, (0, 0, 2), mode="constant", value=0
+                )
+
             tmp_img = self.resize(tmp_img)
             result.append(tmp_img)
 

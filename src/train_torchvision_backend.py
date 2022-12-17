@@ -11,8 +11,8 @@ from src.modules.torchvision_backend.recognition_module import RecognitionModule
 
 if __name__ == "__main__":
     checkpoint_callback = ModelCheckpoint(
-        monitor="pretrain_loss",
-        filename="detection-{epoch:02d}-{pretrain_loss:.2f}",
+        monitor="val_precision",
+        filename="recognition-{epoch:02d}-{val_precision:.2f}",
         save_top_k=3,
         mode="min",
     )
@@ -21,10 +21,12 @@ if __name__ == "__main__":
 
     # defining the model
     recognition_module = RecognitionModule(
-        batch_size=32,
+        batch_size=16,
         pretrained_model_path="resnet_backend.ckpt",
         crop_size=(128, 128),
         fine_tuning=True,
+        transformer=False,
+        num_dataloader_workers=12,
     )
 
     # print(detection_model)
@@ -33,7 +35,7 @@ if __name__ == "__main__":
         # fast_dev_run=True,
         max_epochs=100,
         precision=16,
-        num_sanity_val_steps=0,
+        # num_sanity_val_steps=0,
         callbacks=[checkpoint_callback, lr_logger],
         # limit_train_batches=0.001,
         # limit_test_batches=0.05,
@@ -42,14 +44,14 @@ if __name__ == "__main__":
         logger=WandbLogger(
             entity="mtp-ai-board-game-engine",
             project="cv-project",
-            name="fine-tuning-crop-size-112",
-            group="training-resnet-backbone-conv-transformer",
+            name="no-transformer",
+            group="training-resnet-backbone",
             log_model="all",
         ),
         # auto_scale_batch_size=True,
         # auto_lr_find=True,
         accelerator="gpu",
-        devices=[0, 1],
+        devices=[0, 1, 3],
     )
 
     trainer.fit(model=recognition_module)

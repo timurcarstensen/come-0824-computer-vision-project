@@ -28,7 +28,7 @@ class RecognitionModule(pl.LightningModule):
     def __init__(
         self,
         pretrained_model_path: Optional[str] = None,
-        fine_tuning: Optional[bool] = False,
+        fine_tuning: Optional[bool] = True,
         transformer: Optional[bool] = True,
         batch_size: Optional[int] = 4,
         crop_size: Tuple[int, int] = (128, 128),
@@ -102,7 +102,7 @@ class RecognitionModule(pl.LightningModule):
 
         self.classifier1 = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(57 * 57 * 8, 128),
+            nn.Linear(64 * 64 * 8, 128),
             nn.ReLU(inplace=True),
             nn.Dropout(),
             nn.Linear(128, province_num),
@@ -161,6 +161,19 @@ class RecognitionModule(pl.LightningModule):
         )
 
         if not self.use_transformer:
+            # check if we are missing values along dim1
+            if convolved.view(self.batch_size, -1).shape[1] != 64 * 64 * 8:
+
+                # if so, pad with zeros until we reach the correct size (i.e. batch_size * 64 * 64 * 8)
+                difference = 64 * 64 * 8 - convolved.view(self.batch_size, -1).shape[1]
+                convolved = torch.cat(
+                    (
+                        convolved.view(self.batch_size, -1),
+                        torch.zeros(difference, device=self.device),
+                    ),
+                    dim=1,
+                )
+
             y0 = self.classifier1(convolved.view(self.batch_size, -1))
             y1 = self.classifier2(convolved.view(self.batch_size, -1))
             y2 = self.classifier3(convolved.view(self.batch_size, -1))
