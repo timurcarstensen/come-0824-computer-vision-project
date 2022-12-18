@@ -86,70 +86,71 @@ class RecognitionModule(pl.LightningModule):
         )
         # if transformer then use vision transformer after cropping and before classifier
 
-        self.vit = LitEnd2EndViT(
-            train_set=None,
-            image_size=64,
-            patch_size=8,
-            dim=1024,
-            depth=6,
-            heads=16,
-            mlp_dim=2048,
-            channels=8,
-            dim_head=64,
-            dropout=0.1,
-            emb_dropout=0.1,
-        )
+        if self.use_transformer:
+            self.vit = LitEnd2EndViT(
+                train_set=None,
+                image_size=64,
+                patch_size=8,
+                dim=1024,
+                depth=6,
+                heads=16,
+                mlp_dim=2048,
+                channels=8,
+                dim_head=64,
+                dropout=0.1,
+                emb_dropout=0.1,
+            )
+        else:
+            self.classifier1 = nn.Sequential(
+                nn.Dropout(),
+                nn.Linear(64 * 64 * 8, 128),
+                nn.ReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(128, province_num),
+            )
+            self.classifier2 = nn.Sequential(
+                nn.Dropout(),
+                nn.Linear(64 * 64 * 8, 128),
+                nn.ReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(128, alphabet_num),
+            )
+            self.classifier3 = nn.Sequential(
+                nn.Dropout(),
+                nn.Linear(64 * 64 * 8, 128),
+                nn.ReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(128, alphabet_numbers_num),
+            )
+            self.classifier4 = nn.Sequential(
+                nn.Dropout(),
+                nn.Linear(64 * 64 * 8, 128),
+                nn.ReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(128, alphabet_numbers_num),
+            )
+            self.classifier5 = nn.Sequential(
+                nn.Dropout(),
+                nn.Linear(64 * 64 * 8, 128),
+                nn.ReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(128, alphabet_numbers_num),
+            )
+            self.classifier6 = nn.Sequential(
+                nn.Dropout(),
+                nn.Linear(64 * 64 * 8, 128),
+                nn.ReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(128, alphabet_numbers_num),
+            )
 
-        self.classifier1 = nn.Sequential(
-            nn.Dropout(),
-            nn.Linear(64 * 64 * 8, 128),
-            nn.ReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(128, province_num),
-        )
-        self.classifier2 = nn.Sequential(
-            nn.Dropout(),
-            nn.Linear(64 * 64 * 8, 128),
-            nn.ReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(128, alphabet_num),
-        )
-        self.classifier3 = nn.Sequential(
-            nn.Dropout(),
-            nn.Linear(64 * 64 * 8, 128),
-            nn.ReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(128, alphabet_numbers_num),
-        )
-        self.classifier4 = nn.Sequential(
-            nn.Dropout(),
-            nn.Linear(64 * 64 * 8, 128),
-            nn.ReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(128, alphabet_numbers_num),
-        )
-        self.classifier5 = nn.Sequential(
-            nn.Dropout(),
-            nn.Linear(64 * 64 * 8, 128),
-            nn.ReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(128, alphabet_numbers_num),
-        )
-        self.classifier6 = nn.Sequential(
-            nn.Dropout(),
-            nn.Linear(64 * 64 * 8, 128),
-            nn.ReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(128, alphabet_numbers_num),
-        )
-
-        self.classifier7 = nn.Sequential(
-            nn.Dropout(),
-            nn.Linear(64 * 64 * 8, 128),
-            nn.ReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(128, alphabet_numbers_num),
-        )
+            self.classifier7 = nn.Sequential(
+                nn.Dropout(),
+                nn.Linear(64 * 64 * 8, 128),
+                nn.ReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(128, alphabet_numbers_num),
+            )
 
     def forward(self, x):
         detect_output = self.detection_module(x)
@@ -162,17 +163,17 @@ class RecognitionModule(pl.LightningModule):
 
         if not self.use_transformer:
             # check if we are missing values along dim1
-            if convolved.view(self.batch_size, -1).shape[1] != 64 * 64 * 8:
-
-                # if so, pad with zeros until we reach the correct size (i.e. batch_size * 64 * 64 * 8)
-                difference = 64 * 64 * 8 - convolved.view(self.batch_size, -1).shape[1]
-                convolved = torch.cat(
-                    (
-                        convolved.view(self.batch_size, -1),
-                        torch.zeros((self.batch_size, difference), device=self.device),
-                    ),
-                    dim=1,
-                )
+            # if convolved.view(self.batch_size, -1).shape[1] != 64 * 64 * 8:
+            #
+            #     # if so, pad with zeros until we reach the correct size (i.e. batch_size * 64 * 64 * 8)
+            #     difference = 64 * 64 * 8 - convolved.view(self.batch_size, -1).shape[1]
+            #     convolved = torch.cat(
+            #         (
+            #             convolved.view(self.batch_size, -1),
+            #             torch.zeros((self.batch_size, difference), device=self.device),
+            #         ),
+            #         dim=1,
+            #     )
 
             y0 = self.classifier1(convolved.view(self.batch_size, -1))
             y1 = self.classifier2(convolved.view(self.batch_size, -1))
@@ -294,7 +295,16 @@ class RecognitionModule(pl.LightningModule):
 
         x = x.clone().detach()
 
-        box_pred, lp_char_pred = self(x)
+        try:
+            box_pred, lp_char_pred = self(x)
+        except Exception as e:
+            print(f"Caught exception: {e}")
+            box_pred, lp_char_pred = torch.randn(
+                (self.batch_size, 4), device=self.device
+            ), [
+                torch.randn((self.batch_size, i), device=self.device)
+                for i in [38, 25, 35, 35, 35, 35, 35]
+            ]
 
         bounding_loss = torch.tensor(data=[0.0], device=self.device)
         bounding_loss += 0.8 * nn.L1Loss()(box_pred[:, :2], box_gt[:, :2])
