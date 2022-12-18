@@ -6,7 +6,10 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 # local imports (i.e. our own code)
 # noinspection PyUnresolvedReferences
 import utilities.setup_utils
-from src.modules.torchvision_backend.recognition_module import RecognitionModule
+from src.modules.torchvision_backend.recognition_with_roi_pooling import (
+    RecognitionModule,
+)
+from src.utilities.datasets import TrainDataset, TestDataset
 
 
 if __name__ == "__main__":
@@ -21,12 +24,11 @@ if __name__ == "__main__":
 
     # defining the model
     recognition_module = RecognitionModule(
+        train_set=TrainDataset(),
+        val_set=TestDataset(["val.txt"]),
         batch_size=16,
         pretrained_model_path="resnet_backend.ckpt",
-        crop_size=(128, 128),
-        fine_tuning=True,
-        transformer=False,
-        num_dataloader_workers=12,
+        num_dataloader_workers=8,
     )
 
     # print(detection_model)
@@ -34,7 +36,7 @@ if __name__ == "__main__":
     trainer = pl.Trainer(
         # fast_dev_run=True,
         max_epochs=100,
-        precision=16,
+        # precision=16,
         # num_sanity_val_steps=0,
         callbacks=[checkpoint_callback, lr_logger],
         # limit_train_batches=0.001,
@@ -44,14 +46,14 @@ if __name__ == "__main__":
         logger=WandbLogger(
             entity="mtp-ai-board-game-engine",
             project="cv-project",
-            name="no-transformer",
+            name="roi-pooling",
             group="training-resnet-backbone",
             log_model="all",
         ),
         # auto_scale_batch_size=True,
         # auto_lr_find=True,
         accelerator="gpu",
-        devices=[0, 1, 3],
+        devices=[6, 7],
     )
 
     trainer.fit(model=recognition_module)

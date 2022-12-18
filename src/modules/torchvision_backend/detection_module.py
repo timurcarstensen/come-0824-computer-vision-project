@@ -1,6 +1,10 @@
+# standard library imports
+from typing import Optional
+import sys
+
 # 3rd party imports
 from torchvision.io.image import read_image
-from torchvision.models import resnet18, resnet50
+from torchvision.models import resnet18, resnet50, resnet152
 
 import torch
 import torch.nn as nn
@@ -17,7 +21,7 @@ from src.modules.utils import iou_and_gen_iou
 
 
 class DetectionModule(pl.LightningModule):
-    def __init__(self, batch_size=4):
+    def __init__(self, batch_size: Optional[int] = 4):
         super(DetectionModule, self).__init__()
 
         self.batch_size = batch_size
@@ -87,38 +91,58 @@ class DetectionModule(pl.LightningModule):
 
 
 if __name__ == "__main__":
-    # checkpoint_callback = ModelCheckpoint(
-    #     monitor="pretrain_loss",
-    #     filename="detection-{epoch:02d}-{pretrain_loss:.2f}",
-    #     save_top_k=3,
-    #     mode="min",
-    # )
+    checkpoint_callback = ModelCheckpoint(
+        monitor="pretrain_loss",
+        filename="detection-{epoch:02d}-{pretrain_loss:.2f}",
+        save_top_k=3,
+        mode="min",
+    )
     # 2. learning rate monitor callback
-    # lr_logger = LearningRateMonitor(logging_interval="step", log_momentum=True)
+    lr_logger = LearningRateMonitor(logging_interval="step", log_momentum=True)
 
     # defining the model
     detection_model = DetectionModule(batch_size=16)
 
-    print(detection_model)
+    # for i in detection_model.modules():
+    #     print(i)
 
-    # trainer = pl.Trainer(
-    #     # fast_dev_run=True,
-    #     max_epochs=100,
-    #     callbacks=[checkpoint_callback, lr_logger],
-    #     # limit_train_batches=0.05,
-    #     # limit_test_batches=0.05,
-    #     # limit_val_batches=0.05,
-    #     log_every_n_steps=1,
-    #     logger=WandbLogger(
-    #         entity="mtp-ai-board-game-engine",
-    #         project="cv-project",
-    #         group="pretraining-resnet-backbone",
-    #         log_model="all",
-    #     ),
-    #     # auto_scale_batch_size=True,
-    #     # auto_lr_find=True,
-    #     accelerator="gpu",
-    #     devices=[0, 1],
-    # )
+    print(detection_model)
     #
-    # trainer.fit(model=detection_model)
+    # x = torch.randn((1, 64, 480, 480))
+    # x1 = detection_model.backbone.layer1(x)
+    # x2 = detection_model.backbone.layer2(x1)
+    # x3 = detection_model.backbone.layer3(x2)
+    #
+    #
+    # # print sizes of x to x3
+    # print(x.shape)
+    # print(x1.shape)
+    # print(x2.shape)
+    # print(x3.shape)
+    #
+    #
+    # sys.exit()
+
+    trainer = pl.Trainer(
+        # fast_dev_run=True,
+        max_epochs=200,
+        precision=16,
+        callbacks=[checkpoint_callback, lr_logger],
+        # limit_train_batches=0.05,
+        # limit_test_batches=0.05,
+        # limit_val_batches=0.05,
+        log_every_n_steps=1,
+        logger=WandbLogger(
+            entity="mtp-ai-board-game-engine",
+            project="cv-project",
+            group="pretraining-resnet-backbone",
+            name="resnet152",
+            log_model="all",
+        ),
+        # auto_scale_batch_size=True,
+        # auto_lr_find=True,
+        accelerator="gpu",
+        devices=[1, 2, 3],
+    )
+
+    trainer.fit(model=detection_model)
