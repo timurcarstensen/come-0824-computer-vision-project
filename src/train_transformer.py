@@ -13,17 +13,10 @@ from modules.lit_recognition_transformer import LitRecognitionModule_Transformer
 from utilities.datasets import TrainDataset, TestDataset
 
 if __name__ == "__main__":
-    # TODO: start using the same hyperparameters as the authors for comparability (i.e. optimizer, batch_size, etc.)
-    # TODO: check performance when using pretrained model from the git repo! (https://github.com/detectRecog/CCPD#demo)
-    # initialise model (the train dataset is initialised with the default args)
-
     model = LitRecognitionModule_Transformer(
         train_set=TrainDataset(),
         val_set=TestDataset(["val.txt"]),
         batch_size=2,  # 16 is the default, modify according to available GPU memory
-        # Todo: later include pretrained model path
-        # pretrained_model_path="pretrained_model.ckpt",  # filename of the pretrained model (in src/logs),
-        # make sure this file exists in the logs folder on the machine you're running on
     )
 
     # initialise ModelCheckpoint Callback, which saves the top 3 models based
@@ -39,7 +32,6 @@ if __name__ == "__main__":
     lr_logger = LearningRateMonitor(logging_interval="step", log_momentum=True)
 
     trainer = pl.Trainer(
-        # fast_dev_run=True, # uncomment this line to run a quick test of the model
         max_epochs=100,  # number of epochs to train for
         callbacks=[
             checkpoint_callback,
@@ -50,19 +42,15 @@ if __name__ == "__main__":
         ),  # path to the logs folder, no need to modify
         strategy="ddp_find_unused_parameters_false",  # no need to modify
         log_every_n_steps=1,  # logging interval, no need to modify
-        # limit_val_batches=0.05,  # validation set size, decrease for increased performance (% of the validation set)
-        # limit_train_batches=0.05,  # analogous to limit_val_batches, no need to modify
         logger=WandbLogger(  # initialise WandbLogger, modify the group based on your current experiment
-            entity="mtp-ai-board-game-engine",
-            project="cv-project",
-            group="training_transformer",
+            entity="default-entity-name",
+            project="default-project-name",
+            group="default-grou-name",
             save_dir=os.getenv("LOG_DIR"),
-            log_model=True,
+            log_model="all",
         ),
-        auto_scale_batch_size=True,
-        auto_lr_find=True,
         accelerator="gpu",  # modify this based on the machine you're running on
-        devices=[2, 5, 6, 7],  # device indices for the GPUs
+        # devices=[2, 5, 6, 7],  # device indices for the GPUs
     )
 
     trainer.fit(model=model)

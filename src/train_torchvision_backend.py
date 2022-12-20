@@ -1,3 +1,6 @@
+# standard library imports
+import os
+
 # 3rd party imports
 import pytorch_lightning as pl
 from pytorch_lightning.loggers.wandb import WandbLogger
@@ -33,26 +36,19 @@ if __name__ == "__main__":
     # print(detection_model)
 
     trainer = pl.Trainer(
-        # fast_dev_run=True,
         max_epochs=100,
-        # precision=16,
-        # num_sanity_val_steps=0,
+        precision=16,
         callbacks=[checkpoint_callback, lr_logger],
-        # limit_train_batches=0.001,
-        # limit_test_batches=0.05,
-        # limit_val_batches=0.001,
         log_every_n_steps=1,
-        logger=WandbLogger(
-            entity="mtp-ai-board-game-engine",
-            project="cv-project",
-            name="no-transformer-fixed",
-            group="training-resnet-backbone",
+        logger=WandbLogger(  # initialise WandbLogger, modify the group based on your current experiment
+            entity="default-entity-name",
+            project="default-project-name",
+            group="default-grou-name",
+            save_dir=os.getenv("LOG_DIR"),
             log_model="all",
         ),
-        # auto_scale_batch_size=True,
-        # auto_lr_find=True,
         accelerator="gpu",
-        devices=[0, 1, 2, 3],  # [1, 2, 3],
+        # devices=[0, 1, 2, 3],
     )
 
     trainer.fit(model=recognition_module)
