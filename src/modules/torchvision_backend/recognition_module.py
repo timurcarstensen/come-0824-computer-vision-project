@@ -26,17 +26,17 @@ from src.modules.torchvision_backend.crop_module import CropModule
 
 class RecognitionModule(pl.LightningModule):
     def __init__(
-        self,
-        pretrained_model_path: Optional[str] = None,
-        fine_tuning: Optional[bool] = True,
-        transformer: Optional[bool] = True,
-        batch_size: Optional[int] = 4,
-        crop_size: Tuple[int, int] = (128, 128),
-        province_num: Optional[int] = 38,
-        alphabet_num: Optional[int] = 25,
-        alphabet_numbers_num: Optional[int] = 35,
-        num_dataloader_workers: Optional[int] = 4,
-        plate_character_criterion: Optional[nn.Module] = nn.CrossEntropyLoss(),
+            self,
+            pretrained_model_path: Optional[str] = None,
+            fine_tuning: Optional[bool] = True,
+            transformer: Optional[bool] = True,
+            batch_size: Optional[int] = 4,
+            crop_size: Tuple[int, int] = (128, 128),
+            province_num: Optional[int] = 38,
+            alphabet_num: Optional[int] = 25,
+            alphabet_numbers_num: Optional[int] = 35,
+            num_dataloader_workers: Optional[int] = 4,
+            plate_character_criterion: Optional[nn.Module] = nn.CrossEntropyLoss(),
     ):
         """
         Initialises a RecognitionModule
@@ -218,7 +218,17 @@ class RecognitionModule(pl.LightningModule):
         ).T
 
         # TODO: modify implementation of the TestDataset s.t. that the bounding boxes are returned too
-        _, y_pred = self(x)
+        # _, y_pred = self(x)
+
+        try:
+            _, y_pred = self(x)
+        except Exception as e:
+            print(f"Caught exception: {e}")
+            _, y_pred = torch.randn(
+                (len(batch[0]), 4), device=self.device
+            ).requires_grad_(), [torch.randn((len(batch[0]), i), device=self.device).requires_grad_()
+                                 for i in [38, 25, 35, 35, 35, 35, 35]
+                                 ]
 
         # getting the argmax for each of the 7 digits for each element in the batch (also shape of (7, batch_size))
         y_pred = torch.stack(tensors=[torch.argmax(input=elem, dim=1) for elem in y_pred])
@@ -287,6 +297,8 @@ class RecognitionModule(pl.LightningModule):
         )
 
     def training_step(self, batch, batch_idx):
+        # if self.batch_size != len(batch[0]):
+
         x, box_gt, labels, ims = batch
 
         labels = [[int(elem) for elem in label.split("_")[:7]] for label in labels]
@@ -300,11 +312,10 @@ class RecognitionModule(pl.LightningModule):
         except Exception as e:
             print(f"Caught exception: {e}")
             box_pred, lp_char_pred = torch.randn(
-                (self.batch_size, 4), device=self.device
-            ), [
-                torch.randn((self.batch_size, i), device=self.device)
-                for i in [38, 25, 35, 35, 35, 35, 35]
-            ]
+                (len(batch[0]), 4), device=self.device
+            ).requires_grad_(), [torch.randn((len(batch[0]), i), device=self.device).requires_grad_()
+                                 for i in [38, 25, 35, 35, 35, 35, 35]
+                                 ]
 
         bounding_loss = torch.tensor(data=[0.0], device=self.device)
         bounding_loss += 0.8 * nn.L1Loss()(box_pred[:, :2], box_gt[:, :2])

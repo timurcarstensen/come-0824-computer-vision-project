@@ -26,7 +26,7 @@ if __name__ == "__main__":
     recognition_module = RecognitionModule(
         batch_size=8,
         pretrained_model_path="resnet_backend.ckpt",
-        transformer=True,
+        transformer=False,
         num_dataloader_workers=4,
     )
 
@@ -45,14 +45,14 @@ if __name__ == "__main__":
         logger=WandbLogger(
             entity="mtp-ai-board-game-engine",
             project="cv-project",
-            name="transformer",
+            name="no-transformer-fixed",
             group="training-resnet-backbone",
             log_model="all",
         ),
         # auto_scale_batch_size=True,
         # auto_lr_find=True,
         accelerator="gpu",
-        devices=[1, 2, 3],
+        devices=[0,1,2],#[1, 2, 3],
     )
 
     trainer.fit(model=recognition_module)
