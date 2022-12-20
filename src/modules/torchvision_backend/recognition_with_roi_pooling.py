@@ -342,15 +342,15 @@ class RecognitionModule(pl.LightningModule):
 
     def configure_optimizers(self):
         # TODO: are we actually using the correct optimizer? i.e. the one from the paper with the correct HPs?
-        optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
-        return [optimizer], [lr_scheduler]
-
-        # optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
-        # lr_scheduler = torch.optim.lr_scheduler.StepLR(
-        #    optimizer=optimizer, step_size=5, gamma=0.1
-        # )
+        # optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.9)
+        # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
         # return [optimizer], [lr_scheduler]
+        #
+        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer=optimizer, step_size=10, gamma=0.1
+        )
+        return [optimizer], [lr_scheduler]
 
 
 if __name__ == "__main__":
