@@ -22,8 +22,8 @@ if __name__ == "__main__":
     model = LitRecognitionModule(
         train_set=TrainDataset(),
         val_set=TestDataset(["val.txt"]),
-        batch_size=64,  # 16 is the default, modify according to available GPU memory
-        # pretrained_model_path="pretrained_model.ckpt",  # filename of the pretrained model (in src/logs),
+        batch_size=4,  # 16 is the default, modify according to available GPU memory
+        pretrained_model_path="detection_module.ckpt",  # filename of the pretrained model (in src/logs),
         # make sure this file exists in the logs folder on the machine you're running on
     )
 
@@ -42,6 +42,7 @@ if __name__ == "__main__":
     trainer = pl.Trainer(
         # fast_dev_run=True, # uncomment this line to run a quick test of the model
         max_epochs=100,  # number of epochs to train for
+        precision=16,
         callbacks=[
             checkpoint_callback,
             lr_logger,
@@ -56,6 +57,7 @@ if __name__ == "__main__":
         logger=WandbLogger(  # initialise WandbLogger, modify the group based on your current experiment
             entity="mtp-ai-board-game-engine",
             project="cv-project",
+            name="training-mixed-precision",
             group="training",
             save_dir=os.getenv("LOG_DIR"),
             log_model="all",

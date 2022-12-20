@@ -9,6 +9,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 # local imports (i.e. our own code)
 # noinspection PyUnresolvedReferences
 import utilities.setup_utils
+
 # from modules.pl_original_models.lit_recognition import LitRecognitionModule
 from modules.lit_recognition_transformer import LitRecognitionModule_Transformer
 from utilities.datasets import TrainDataset, TestDataset
@@ -21,8 +22,8 @@ if __name__ == "__main__":
     model = LitRecognitionModule_Transformer(
         train_set=TrainDataset(),
         val_set=TestDataset(["val.txt"]),
-        batch_size=16,  # 16 is the default, modify according to available GPU memory
-        # pretrained_model_path="pretrained_model.ckpt",  # filename of the pretrained model (in src/logs),
+        batch_size=32,  # 16 is the default, modify according to available GPU memory
+        pretrained_model_path="detection_module.ckpt",  # filename of the pretrained model (in src/logs),
         # make sure this file exists in the logs folder on the machine you're running on
     )
 
@@ -55,9 +56,10 @@ if __name__ == "__main__":
         logger=WandbLogger(  # initialise WandbLogger, modify the group based on your current experiment
             entity="mtp-ai-board-game-engine",
             project="cv-project",
+            name="recognition-transformer-pretrained",
             group="recognition_with_transformer",
             save_dir=os.getenv("LOG_DIR"),
-            log_model=True,
+            log_model="all",
         ),
         auto_scale_batch_size=True,
         auto_lr_find=True,
