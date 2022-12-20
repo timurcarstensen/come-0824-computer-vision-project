@@ -39,17 +39,21 @@ class CropModule(pl.LightningModule):
                 .int()
             )
 
-            tmp_img = img[idx][:, elem[1] : elem[3], elem[0] : elem[2]]
+            tmp_img = img[idx][:, elem[1]: elem[3], elem[0]: elem[2]]
 
             if elem[1] > elem[3]:
-                tmp_img = img[idx][:, elem[3] : elem[1], elem[0] : elem[2]]
+                tmp_img = img[idx][:, elem[3]: elem[1], elem[0]: elem[2]]
 
             if elem[0] > elem[2]:
-                tmp_img = img[idx][:, elem[1] : elem[3], elem[2] : elem[0]]
+                tmp_img = img[idx][:, elem[1]: elem[3], elem[2]: elem[0]]
 
             # cover the case where both x and y are flipped
             if elem[1] > elem[3] and elem[0] > elem[2]:
-                tmp_img = img[idx][:, elem[3] : elem[1], elem[2] : elem[0]]
+                tmp_img = img[idx][:, elem[3]: elem[1], elem[2]: elem[0]]
+
+            # if there is still one dimension of tmp_img that is 0, then use the whole image
+            if tmp_img.shape[1] == 0 or tmp_img.shape[2] == 0:
+                tmp_img = img[idx]
 
             tmp_img = self.resize(tmp_img)
             result.append(tmp_img)
